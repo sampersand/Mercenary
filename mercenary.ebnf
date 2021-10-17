@@ -1,0 +1,84 @@
+(* Mercenary's EBNF *)
+
+(* Comments are able to be embedded between any two tokens, *)
+COMMENTS := '/*' (? Any non-*/ character sequence ?) '*/'
+
+program := {<declaration>} ;
+declaration := <function-declaration> | <global-declaration> | <import-declaration> ;
+
+(* Global variables, note that there's no way to specify a default value *)
+global-declaration := 'global' <identifier> ';' ;
+
+(* Imports the given file path if it hasn't been included yet *)
+import-declaration := 'import' <string> ';' ;
+
+(* Declares a basic function. No optional/default arguments. *)
+function-declaration := 
+  'function' <identifier>
+    '(' [<identifier> {',' <identifier>}] ')'
+    <brace-statements>
+  ;
+
+brace-statements := '{' <statements> '}' ;
+statements := <statement> {<statement>} ;
+statement
+ := <if-statement>
+  | <while-statement>
+  | <return-statement>
+  | <assignment>
+  | 'do' <expression> ';' (* eg `do print(123);` *)
+  ;
+
+if-statement :=
+  'if' '(' <expression> ')' <brace-statements>
+  { 'else' 'if' '(' <expression> ')' <brace-statements> }
+  [ 'else' <brace-statements> ]
+  ;
+while-statement := 'while' '(' <expression> ')' <brace-statements> ;
+return-statement := 'return' [<expression>] ';' ;
+assignment
+ := 'let' <identifier> '=' <expression> ';' (* normal assignment *)
+  | 'let' <primary> '[' <expression> ']' '=' <expression> ';' (* array assignment *)
+  ;
+
+(* No order of operations lol *)
+expression := <primary> | <expression> {<operator> <expression>} ;
+operator
+ := '==' | '!=' | '>' | '>=' | '<' | '<='
+  | '&' | '|' (* no short circuit lol *)
+  | '+' | '-' | '*' | '/' | '%'
+  ;
+
+primary
+ := <literal>
+  | '(' <expression> ')'
+  | ('-' | '!') <primary>
+  | <primary> '(' [<expression> {',' <expression>}] ')' (* function call *)
+  | <primary> '[' <expression> ']' (* array indexing *)
+  ;
+
+literal
+ := 'true' | 'false'
+  | <number>
+  | <string>
+  | <identifier>
+  | '[' [<expression> {',' <expression>}] ']' (* array literal *)
+  ;
+
+number := DIGIT {DIGIT} ; (* only base-10 integers are supported *)
+identifier := (LETTER | '_') {LETTER | '_' | DIGIT} ;
+
+string := <single-quoted-string> | <double-quoted-string> ;
+(* single quoted strings only allow escaping single quotes. *)
+single-quoted-string := "'" { "\'" (? any non-"'" character ?) } "'" ;)
+double-quoted-string := '"' { <double-quoted-escape> | (? any non-'"' character ?) } '"' ;
+double-quoted-escape := '\\' ('n' | 't' | 'f' | 'r' | '"' | "'" | 'x' HEX_CHAR HEX_CHAR ) ;
+
+(* These are what you'd expect, but i figured i may as well write them out for clarity *)
+HEX_CHAR := DIGIT | 'a' | 'A' | 'b' | 'B' | 'c' | 'C' | 'd' | 'D' | 'e' | 'E' | 'f' | 'F' ;
+DIGIT := '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' ;
+(* this is all the lowercase and uppercase ascii letters *)
+LETTER := 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o'
+  | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | 'A' | 'B' | 'C' | 'D' | 'E'
+  | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U'
+  | 'V' | 'W' | 'X' | 'Y' | 'Z' ;

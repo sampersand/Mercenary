@@ -1,0 +1,44 @@
+(comments are `/* ... */`, like in c++)
+global
+function
+if
+else
+while
+return
+do
+let
+true
+false
+;
+=
+(
+)
+{
+}
+==
+!=
+<
+<=
+>
+>=
+&
+|
++
+-
+*
+/
+%
+!
+,
+numbers: normal base 10 numbers, like `123`, `0912`, etc. Other bases aren't required.
+variable names: normal variables, ie starts with any letter or `_`, followed by any amount of letters, numbers, or `_`
+strings: both double and single quoted strings act the same. Start from a `'` or `"`, and go until the same quote is seen. There's A few escape sequences I want:
+	\': a `'` character
+	\": a `"` character
+	\\: a `\` character
+	\n: a newline character
+	\t: a tab character
+	\r: a carriage return character
+	\f: a form feed character
+	\x##: a character with the hex code `##`.
+	(These are all the same as they are in C++)
