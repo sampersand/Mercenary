@@ -38,3 +38,6 @@ Gets a line from stdin.
 
 ## `exit(int)`
 Exits with the given status code
+
+## `random()`
+Returns a random nonnegative number.

@@ -5,11 +5,9 @@ After writing so many programming languages myself, I decided that I won't write
 People are not allowed to modify previous people's code, and they are encouraged to write it as terrible as possible.
 
 ## Contributors
-The following people contributed to the original project:
+The following lovely people contributed to the original project:
 
 - Lexer (Assembly): TBD
 - AST Generation (C): TBD
 - Codegen (C++): TBD
 - Runtime (RUST): TBD
-
-

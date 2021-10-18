@@ -1,0 +1,30 @@
+function guess() {
+	do print("> "); /* should flush stdout */
+	let guess = atoi(prompt());
+
+	if (guess < secret) {
+		do print("Too small!");
+	} else if (guess > secret) {
+		do print("Too large!");
+	}
+
+	return guess == secret;
+}
+
+function main(argv) {
+	let max = 100;
+	if (length(argv) != 1) {
+		let max = atoi(argv[1]);
+	}
+	global secret = random() % max;
+
+	do print("Guessing game! Guess from 1-" + itoa(max) + "\n");
+
+	let guesses = 0;
+
+	while (!guess()) {
+		let guesses = guesses + 1;
+	}
+
+	do print("It took you " + itoa(guesses) + " guesses!\n");
+}
