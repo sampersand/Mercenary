@@ -2,6 +2,9 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "dyn_array.h"
+
+// TODO: use dyn_array.h for lists inside AST
 
 typedef struct {
     uint32_t len;
@@ -9,12 +12,17 @@ typedef struct {
     const char* s;
 } string_t;
 
+arr_forward_decl(string_array_t);
+arr_decl(string_array_t, string_t);
+
 void print_string(string_t s);
 
 /* === EXPRESSIONS === */
 
 struct expr;
 typedef struct expr expr_t;
+
+arr_forward_decl(expr_array_t)
 
 typedef enum {
     BINOP_EQ,
@@ -50,21 +58,13 @@ typedef struct {
 
 typedef struct {
     expr_t* func;
-    uint32_t arity;
-    // expr_t*[arity]
-    expr_t** args;
+    expr_array_t args;
 } call_expr_t;
 
 typedef struct {
     expr_t* array;
     expr_t* index;
 } index_expr_t;
-
-typedef struct {
-    uint32_t len;
-    // expr_t*[len]
-    expr_t** exprs;
-} array_expr_t;
 
 struct expr {
     enum {
@@ -95,30 +95,35 @@ struct expr {
         // EXPR_STRING, EXPR_IDENT
         string_t string;
         // EXPR_ARRAY
-        array_expr_t array;
+        expr_array_t array;
     } value;
 };
 
+arr_decl(expr_array_t, expr_t)
+
 /* === STATEMENTS === */
 
-struct block;
-typedef struct block block_t;
+arr_forward_decl(stmt_array_t)
+
+typedef stmt_array_t block_t;
+
+arr_forward_decl(block_array_t)
 
 typedef struct {
     expr_t* main_cond;
-    block_t* main_block;
-    uint32_t elif_len;
-    // nullable if elif_len == 0. expr_t*[elif_len
-    expr_t** elif_conds;
-    // nullable if elif_len == 0. block_t*[elif_len]
-    block_t** elif_blocks;
+    block_t main_block;
+    // length must be same of elif_conds and elif_blocks
+    // expr_t[elif_len]
+    expr_array_t elif_conds;
+    // block_t[elif_len]
+    block_array_t elif_blocks;
     // nullable.
     block_t* else_block;
 } if_stmt_t;
 
 typedef struct {
     expr_t* cond;
-    block_t* block;
+    block_t block;
 } while_stmt_t;
 
 typedef struct {
@@ -157,20 +162,15 @@ typedef struct {
     } value;
 } stmt_t;
 
-struct block {
-    uint32_t len;
-    // stmt_t*[len]
-    stmt_t** stmts;
-};
+arr_decl(stmt_array_t, stmt_t)
+arr_decl(block_array_t, block_t)
 
 /* === DECLARATIONS === */
 
 typedef struct {
     string_t name;
-    uint32_t arity;
-    // string_t[arity]
-    string_t* args;
-    block_t* block;
+    string_array_t args;
+    block_t block;
 } fn_decl_t;
 
 typedef struct {
@@ -183,15 +183,14 @@ typedef struct {
         // DECL_FUNCTION
         fn_decl_t fn;
         // DECL_GLOBAL, DECL_IMPORT
-        string_t str;
+        string_t string;
     } value;
 } decl_t;
 
-typedef struct {
-    uint32_t len;
-    // decl_t*[len]
-    decl_t** decls;
-} program_t;
+arr_forward_decl(decl_array_t)
+arr_decl(decl_array_t, decl_t)
+
+typedef decl_array_t program_t;
 
 // Make a string from a char* with a given length.
 string_t mk_string(const char* s, uint32_t len);
@@ -200,68 +199,41 @@ string_t mk_string_cstr(const char* s);
 
 /* === Make various expression types === */
 
-expr_t* mk_binop(expr_t* lhs, expr_t* rhs, binop_t op);
-expr_t* mk_unop(expr_t* subexpr, unop_t op);
-expr_t* mk_call(expr_t* func, uint32_t arity, expr_t** args);
-expr_t* mk_index(expr_t* array, expr_t* index);
-expr_t* mk_array(uint32_t len, expr_t** exprs);
-expr_t* mk_bool(bool val);
-expr_t* mk_number(uint64_t number);
-expr_t* mk_string_expr(string_t string);
-expr_t* mk_ident(string_t ident);
+expr_t mk_binop(expr_t lhs, expr_t rhs, binop_t op);
+expr_t mk_unop(expr_t subexpr, unop_t op);
+expr_t mk_call(expr_t func, expr_array_t args);
+expr_t mk_index(expr_t array, expr_t index);
+expr_t mk_array(expr_array_t exprs);
+expr_t mk_bool(bool val);
+expr_t mk_number(uint64_t number);
+expr_t mk_null();
+expr_t mk_string_expr(string_t string);
+expr_t mk_ident(string_t ident);
 
 /* === Make various statement types === */
 
-stmt_t* mk_if(
-    expr_t* main_cond,
-    block_t* main_block,
-    uint32_t elif_len,
-    // nullable if elif_len == 0. expr_t*[elif_len]
-    expr_t** elif_conds,
-    // nullable if elif_len == 0. block_t*[elif_len]
-    block_t** elif_blocks,
+stmt_t mk_if(
+    expr_t main_cond,
+    block_t main_block,
+    // length must be same of elif_conds and elif_blocks
+    // expr_t[elif_len]
+    expr_array_t elif_conds,
+    // block_t[elif_len]
+    block_array_t elif_blocks,
     // nullable.
     block_t* else_block
 );
-stmt_t* mk_while(expr_t* cond, block_t* block);
-stmt_t* mk_return(expr_t* expr);
-stmt_t* mk_assign_normal(string_t ident, expr_t* value);
-stmt_t* mk_assign_array(expr_t* array, expr_t* index, expr_t* value);
-stmt_t* mk_do(expr_t* expr);
+stmt_t mk_while(expr_t cond, block_t block);
+stmt_t mk_return(expr_t expr);
+stmt_t mk_assign_normal(bool global, string_t ident, expr_t value);
+stmt_t mk_assign_array(bool global, expr_t array, expr_t index, expr_t value);
+stmt_t mk_do(expr_t expr);
 
 // Make a block.
-block_t* mk_block(uint32_t len, stmt_t** stmts);
+block_t mk_block(stmt_array_t stmts);
 
 /* === Make various declaration types === */
 
-decl_t* mk_fn_decl(string_t name, uint32_t arity, string_t* args, block_t* block);
-decl_t* mk_global(string_t ident);
-decl_t* mk_import(string_t str);
-
-// Make a program.
-program_t* mk_program(uint32_t len, decl_t** decls);
-
-// Box an array by copying it onto the heap.
-
-expr_t** box_exprs(uint32_t len, expr_t** exprs);
-stmt_t** box_stmts(uint32_t len, stmt_t** stmts);
-block_t** box_blocks(uint32_t len, block_t** blocks);
-decl_t** box_decls(uint32_t len, decl_t** decls);
-string_t* box_strings(uint32_t len, string_t* strings);
-
-// Free things.
-// Note: free_plurals(len, array) WILL free() the array.
-
-// void free_expr(expr_t* expr);
-// void free_exprs(uint32_t len, expr_t** exprs);
-
-// void free_stmt(stmt_t* stmt);
-// void free_stmts(uint32_t len, stmt_t** stmts);
-
-// void free_block(block_t* block);
-// void free_blocks(uint32_t len, block_t** blocks);
-
-// void free_decl(decl_t* decl);
-// void free_decls(uint32_t len, decl_t** decls);
-
-void free_program(program_t* program);
+decl_t mk_fn_decl(string_t name, string_array_t args, block_t block);
+decl_t mk_global(string_t ident);
+decl_t mk_import(string_t string);

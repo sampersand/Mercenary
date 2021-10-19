@@ -1,3 +1,4 @@
 *.o
 src/parser/main
 src/lexer/main
+.vscode

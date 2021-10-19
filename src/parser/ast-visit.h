@@ -20,7 +20,7 @@ struct ast_visitor {
     FN(visit_number_expr, uint64_t*);
     FN(visit_string_expr, string_t*);
     FN(visit_ident_expr, string_t*);
-    FN(visit_array_expr, array_expr_t*);
+    FN(visit_array_expr, expr_array_t*);
     FN_(visit_null_expr);
     FN(visit_expr, expr_t*);
     FN(visit_expr_pre, expr_t*);
@@ -62,7 +62,7 @@ void walk_bool_expr(ast_visitor_t* visitor, bool* expr);
 void walk_number_expr(ast_visitor_t* visitor, uint64_t* expr);
 void walk_string_expr(ast_visitor_t* visitor, string_t* expr);
 void walk_ident_expr(ast_visitor_t* visitor, string_t* expr);
-void walk_array_expr(ast_visitor_t* visitor, array_expr_t* expr);
+void walk_array_expr(ast_visitor_t* visitor, expr_array_t* expr);
 void walk_null_expr(ast_visitor_t* visitor);
 void walk_expr(ast_visitor_t* visitor, expr_t* expr);
 void walk_expr_pre(ast_visitor_t* visitor, expr_t* expr);

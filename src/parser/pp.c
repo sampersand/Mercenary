@@ -8,7 +8,7 @@ typedef struct {
 
 void pp_program_pre(ast_visitor_t* visitor, program_t* program) {
     printf("(program");
-    if (program->decls > 0) {
+    if (arr_get_size(*program) > 0) {
         PP_DATA(visitor)->space_before_decl = true;
     }
 }
@@ -33,12 +33,12 @@ void pp_fn_decl(ast_visitor_t* visitor, fn_decl_t* decl) {
     printf("(fn ");
     print_string(decl->name);
     printf(" (args");
-    for (int i = 0; i < decl->arity; i++) {
+    for (int i = 0; i < arr_get_size(decl->args); i++) {
         printf(" ");
-        print_string(decl->args[i]);
+        print_string(arr_at(decl->args, i));
     }
     printf(") ");
-    visitor->visit_block(visitor, decl->block);
+    visitor->visit_block(visitor, &decl->block);
 }
 
 void pp_global_decl(ast_visitor_t* visitor, string_t* ident) {
@@ -55,9 +55,9 @@ void pp_import_decl(ast_visitor_t* visitor, string_t* str) {
 
 void pp_block(ast_visitor_t* visitor, block_t* block) {
     printf("(block");
-    for (int i = 0; i < block->len; i++) {
+    for (int i = 0; i < arr_get_size(*block); i++) {
         printf(" ");
-        visitor->visit_stmt(visitor, block->stmts[i]);
+        visitor->visit_stmt(visitor, &arr_at(*block, i));
     }
     printf(")");
 }
@@ -74,12 +74,12 @@ void pp_if_stmt(ast_visitor_t* visitor, if_stmt_t* stmt) {
     printf("(if (expr ");
     visitor->visit_expr(visitor, stmt->main_cond);
     printf(") ");
-    visitor->visit_block(visitor, stmt->main_block);
-    for (int i = 0; i < stmt->elif_len; i++) {
+    visitor->visit_block(visitor, &stmt->main_block);
+    for (int i = 0; i < arr_get_size(stmt->elif_conds); i++) {
         printf(" (elif (expr ");
-        visitor->visit_expr(visitor, stmt->elif_conds[i]);
+        visitor->visit_expr(visitor, &arr_at(stmt->elif_conds, i));
         printf(") ");
-        visitor->visit_block(visitor, stmt->elif_blocks[i]);
+        visitor->visit_block(visitor, &arr_at(stmt->elif_blocks, i));
         printf(")");
     }
     if (stmt->else_block != NULL) {
@@ -94,7 +94,7 @@ void pp_while_stmt(ast_visitor_t* visitor, while_stmt_t* stmt) {
     printf("(while (expr ");
     visitor->visit_expr(visitor, stmt->cond);
     printf(") ");
-    visitor->visit_block(visitor, stmt->block);
+    visitor->visit_block(visitor, &stmt->block);
     printf(")");
 }
 
@@ -187,9 +187,9 @@ void pp_call_expr(ast_visitor_t* visitor, call_expr_t* expr) {
     printf("(call ");
     visitor->visit_expr(visitor, expr->func);
     printf(" (args");
-    for (int i = 0; i < expr->arity; i++) {
+    for (int i = 0; i < arr_get_size(expr->args); i++) {
         printf(" ");
-        visitor->visit_expr(visitor, expr->args[i]);
+        visitor->visit_expr(visitor, &arr_at(expr->args, i));
     }
     printf("))");
 }
@@ -218,53 +218,51 @@ void pp_ident_expr(ast_visitor_t* visitor, string_t* expr) {
     print_string(*expr);
 }
 
-void pp_array_expr(ast_visitor_t* visitor, array_expr_t* expr) {
+void pp_array_expr(ast_visitor_t* visitor, expr_array_t* expr) {
     printf("(array");
-    for (int i = 0; i < expr->len; i++) {
+    for (int i = 0; i < arr_get_size(*expr); i++) {
         printf(" ");
-        visitor->visit_expr(visitor, expr->exprs[i]);
+        visitor->visit_expr(visitor, &arr_at(*expr, i));
     }
     printf(")");
 }
 
-ast_visitor_t* pp_visitor() {
-    ast_visitor_t* visitor = malloc(sizeof(ast_visitor_t));
-    memcpy(visitor, &DEFAULT_VISITOR, sizeof(ast_visitor_t));
+ast_visitor_t pp_visitor() {
+    ast_visitor_t visitor = DEFAULT_VISITOR;
     
-    visitor->data = malloc(sizeof(pp_data));
-    PP_DATA(visitor)->space_before_decl = false;
+    visitor.data = malloc(sizeof(pp_data));
+    ((pp_data*) visitor.data)->space_before_decl = false;
 
-    visitor->visit_program_pre = pp_program_pre;
-    visitor->visit_program_post = pp_program_post;
-    visitor->visit_decl_pre = pp_decl_pre;
-    visitor->visit_decl_post = pp_decl_post;
-    visitor->visit_fn_decl = pp_fn_decl;
-    visitor->visit_block = pp_block;
-    visitor->visit_stmt_pre = pp_stmt_pre;
-    visitor->visit_stmt_post = pp_stmt_post;
-    visitor->visit_if_stmt = pp_if_stmt;
-    visitor->visit_while_stmt = pp_while_stmt;
-    visitor->visit_return_stmt = pp_return_stmt;
-    visitor->visit_do_stmt = pp_do_stmt;
-    visitor->visit_assign_normal = pp_assign_normal;
-    visitor->visit_assign_array = pp_assign_array;
-    visitor->visit_global_assign_normal = pp_global_assign_normal;
-    visitor->visit_global_assign_array = pp_global_assign_array;
-    visitor->visit_binop_expr = pp_binop_expr;
-    visitor->visit_unop_expr = pp_unop_expr;
-    visitor->visit_call_expr = pp_call_expr;
-    visitor->visit_index_expr = pp_index_expr;
-    visitor->visit_bool_expr = pp_bool_expr;
-    visitor->visit_number_expr = pp_number_expr;
-    visitor->visit_string_expr = pp_string_expr;
-    visitor->visit_ident_expr = pp_ident_expr;
-    visitor->visit_array_expr = pp_array_expr;
+    visitor.visit_program_pre = pp_program_pre;
+    visitor.visit_program_post = pp_program_post;
+    visitor.visit_decl_pre = pp_decl_pre;
+    visitor.visit_decl_post = pp_decl_post;
+    visitor.visit_fn_decl = pp_fn_decl;
+    visitor.visit_block = pp_block;
+    visitor.visit_stmt_pre = pp_stmt_pre;
+    visitor.visit_stmt_post = pp_stmt_post;
+    visitor.visit_if_stmt = pp_if_stmt;
+    visitor.visit_while_stmt = pp_while_stmt;
+    visitor.visit_return_stmt = pp_return_stmt;
+    visitor.visit_do_stmt = pp_do_stmt;
+    visitor.visit_assign_normal = pp_assign_normal;
+    visitor.visit_assign_array = pp_assign_array;
+    visitor.visit_global_assign_normal = pp_global_assign_normal;
+    visitor.visit_global_assign_array = pp_global_assign_array;
+    visitor.visit_binop_expr = pp_binop_expr;
+    visitor.visit_unop_expr = pp_unop_expr;
+    visitor.visit_call_expr = pp_call_expr;
+    visitor.visit_index_expr = pp_index_expr;
+    visitor.visit_bool_expr = pp_bool_expr;
+    visitor.visit_number_expr = pp_number_expr;
+    visitor.visit_string_expr = pp_string_expr;
+    visitor.visit_ident_expr = pp_ident_expr;
+    visitor.visit_array_expr = pp_array_expr;
     return visitor;
 }
 
-void pp_program(program_t *program) {
-    ast_visitor_t* visitor = pp_visitor();
-    visitor->visit_program(visitor, program);
-    free((pp_data*)visitor->data);
-    free(visitor);
+void pp_program(program_t program) {
+    ast_visitor_t visitor = pp_visitor();
+    visitor.visit_program(&visitor, &program);
+    free((pp_data*)visitor.data);
 }

@@ -1,5 +1,6 @@
 CC ?= cc
 CFLAGS ?= -O2
+# CFLAGS += -Isrc/parser -Isrc/lexer
 LDFLAGS += -no-pie
 # Change to macho64 on Mac, win64 on Windows
 # (I don't know how to do conditionals like this in GNU Make, sorry)
@@ -20,13 +21,13 @@ ifeq ($(DEBUG),1)
 	ASMFLAGS += -g
 endif
 
-objects = src/parser/ast.o src/parser/ast-free.o src/parser/ast-visit.o src/parser/main.o src/parser/pp.o
+parser_objs = src/parser/ast-free.o src/parser/ast-visit.o src/parser/ast.o src/parser/pp.o src/parser/parser.o
 
 all: src/parser/main src/lexer/main
 
-src/parser/main: $(objects) src/lexer/lexer.o
+src/parser/main: $(parser_objs) src/lexer/lexer.o
 
-$(objects): %.o: %.c
+$(parser_objs): %.o: %.c
 
 src/lexer/lexer.o:
 	nasm -f$(NASM_FORMAT) $(ASMFLAGS) src/lexer/lexer.asm

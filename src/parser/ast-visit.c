@@ -10,8 +10,8 @@ void walk_unop_expr(ast_visitor_t* visitor, unop_expr_t* expr) {
 }
 void walk_call_expr(ast_visitor_t* visitor, call_expr_t* expr) {
     visitor->visit_expr(visitor, expr->func);
-    for (int i = 0; i < expr->arity; i++) {
-        visitor->visit_expr(visitor, expr->args[i]);
+    for (int i = 0; i < arr_get_size(expr->args); i++) {
+        visitor->visit_expr(visitor, &arr_at(expr->args, i));
     }
 }
 void walk_index_expr(ast_visitor_t* visitor, index_expr_t* expr) {
@@ -22,9 +22,9 @@ void walk_bool_expr(ast_visitor_t* visitor, bool* expr) {}
 void walk_number_expr(ast_visitor_t* visitor, uint64_t* expr) {}
 void walk_string_expr(ast_visitor_t* visitor, string_t* expr) {}
 void walk_ident_expr(ast_visitor_t* visitor, string_t* expr) {}
-void walk_array_expr(ast_visitor_t* visitor, array_expr_t* expr) {
-    for (int i = 0; i < expr->len; i++) {
-        visitor->visit_expr(visitor, expr->exprs[i]);
+void walk_array_expr(ast_visitor_t* visitor, expr_array_t* expr) {
+    for (int i = 0; i < arr_get_size(*expr); i++) {
+        visitor->visit_expr(visitor, &arr_at(*expr, i));
     }
 }
 void walk_null_expr(ast_visitor_t* visitor) {}
@@ -79,10 +79,10 @@ void walk_expr_post(ast_visitor_t* visitor, expr_t* expr) {}
 
 void walk_if_stmt(ast_visitor_t* visitor, if_stmt_t* stmt) {
     visitor->visit_expr(visitor, stmt->main_cond);
-    visitor->visit_block(visitor, stmt->main_block);
-    for (int i = 0; i < stmt->elif_len; i++) {
-        visitor->visit_expr(visitor, stmt->elif_conds[i]);
-        visitor->visit_block(visitor, stmt->elif_blocks[i]);
+    visitor->visit_block(visitor, &stmt->main_block);
+    for (int i = 0; i < arr_get_size(stmt->elif_conds); i++) {
+        visitor->visit_expr(visitor, &arr_at(stmt->elif_conds, i));
+        visitor->visit_block(visitor, &arr_at(stmt->elif_blocks, i));
     }
     if (stmt->else_block != NULL) {
         visitor->visit_block(visitor, stmt->else_block);
@@ -90,7 +90,7 @@ void walk_if_stmt(ast_visitor_t* visitor, if_stmt_t* stmt) {
 }
 void walk_while_stmt(ast_visitor_t* visitor, while_stmt_t* stmt) {
     visitor->visit_expr(visitor, stmt->cond);
-    visitor->visit_block(visitor, stmt->block);
+    visitor->visit_block(visitor, &stmt->block);
 }
 void walk_return_stmt(ast_visitor_t* visitor, expr_t* stmt) {
     visitor->visit_expr(visitor, stmt);
@@ -157,8 +157,8 @@ void walk_stmt_post(ast_visitor_t* visitor, stmt_t* stmt) {}
 
 void walk_block(ast_visitor_t* visitor, block_t* block) {
     visitor->visit_block_pre(visitor, block);
-    for (int i = 0; i < block->len; i++) {
-        visitor->visit_stmt(visitor, block->stmts[i]);
+    for (int i = 0; i < arr_get_size(*block); i++) {
+        visitor->visit_stmt(visitor, &arr_at(*block, i));
     }
     visitor->visit_block_post(visitor, block);
 }
@@ -166,7 +166,7 @@ void walk_block_pre(ast_visitor_t* visitor, block_t* block) {}
 void walk_block_post(ast_visitor_t* visitor, block_t* block) {}
 
 void walk_fn_decl(ast_visitor_t* visitor, fn_decl_t* decl) {
-    visitor->visit_block(visitor, decl->block);
+    visitor->visit_block(visitor, &decl->block);
 }
 void walk_global_decl(ast_visitor_t* visitor, string_t* ident) {}
 void walk_import_decl(ast_visitor_t* visitor, string_t* str) {}
@@ -178,11 +178,11 @@ void walk_decl(ast_visitor_t* visitor, decl_t* decl) {
             break;
         }
         case DECL_GLOBAL: {
-            visitor->visit_global_decl(visitor, &decl->value.str);
+            visitor->visit_global_decl(visitor, &decl->value.string);
             break;
         }
         case DECL_IMPORT: {
-            visitor->visit_import_decl(visitor, &decl->value.str);
+            visitor->visit_import_decl(visitor, &decl->value.string);
             break;
         }
     }
@@ -193,8 +193,8 @@ void walk_decl_post(ast_visitor_t* visitor, decl_t* decl) {}
 
 void walk_program(ast_visitor_t* visitor, program_t* program) {
     visitor->visit_program_pre(visitor, program);
-    for (int i = 0;  i < program->len; i++) {
-        visitor->visit_decl(visitor, program->decls[i]);
+    for (int i = 0;  i < arr_get_size(*program); i++) {
+        visitor->visit_decl(visitor, &arr_at(*program, i));
     }
     visitor->visit_program_post(visitor, program);
 }

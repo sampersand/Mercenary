@@ -18,221 +18,181 @@ string_t mk_string_cstr(const char* s) {
     return mk_string(s, strlen(s));
 }
 
-expr_t* alloc_expr() {
-    expr_t* expr = malloc(sizeof(expr_t));
-    memset(expr, 0, sizeof(expr_t));
-    return expr;
+expr_t* box_expr(expr_t expr) {
+    expr_t* new_expr = (expr_t*) malloc(sizeof(expr_t));
+    *new_expr = expr;
+    return new_expr;
 }
 
-expr_t* mk_binop(expr_t* lhs, expr_t* rhs, binop_t op) {
-    expr_t* expr = alloc_expr();
-    expr->kind = EXPR_BINARY;
-    expr->value.binary = (binop_expr_t) {
-        .lhs = lhs,
-        .rhs = rhs,
-        .op = op
+expr_t mk_binop(expr_t lhs, expr_t rhs, binop_t op) {
+    return (expr_t) {
+        .kind = EXPR_BINARY,
+        .value.binary = (binop_expr_t) {
+            .lhs = box_expr(lhs),
+            .rhs = box_expr(rhs),
+            .op = op
+        }
     };
-    return expr;
 }
 
-expr_t* mk_unop(expr_t* subexpr, unop_t op) {
-    expr_t* expr = alloc_expr();
-    expr->kind = EXPR_UNARY;
-    expr->value.unary = (unop_expr_t) {
-        .subexpr = subexpr,
-        .op = op
+expr_t mk_unop(expr_t subexpr, unop_t op) {
+    return (expr_t) {
+        .kind = EXPR_UNARY,
+        .value.unary = (unop_expr_t) {
+            .subexpr = box_expr(subexpr),
+            .op = op
+        }
     };
-    return expr;
 }
 
-expr_t* mk_call(expr_t* func, uint32_t arity, expr_t** args) {
-    expr_t* expr = alloc_expr();
-    expr->kind = EXPR_CALL;
-    expr->value.call = (call_expr_t) {
-        .func = func,
-        .arity = arity,
-        .args = args
+expr_t mk_call(expr_t func, expr_array_t args) {
+    return (expr_t) {
+        .kind = EXPR_CALL,
+        .value.call = (call_expr_t) {
+            .func = box_expr(func),
+            .args = args,
+        }
     };
-    return expr;
 }
 
-expr_t* mk_index(expr_t* array, expr_t* index) {
-    expr_t* expr = alloc_expr();
-    expr->kind = EXPR_INDEX;
-    expr->value.index = (index_expr_t) {
-        .array = array,
-        .index = index
+expr_t mk_index(expr_t array, expr_t index) {
+    return (expr_t) {
+        .kind = EXPR_INDEX,
+        .value.index = (index_expr_t) {
+            .array = box_expr(array),
+            .index = box_expr(index)
+        }
     };
-    return expr;
 }
 
-expr_t* mk_array(uint32_t len, expr_t** exprs) {
-    expr_t* expr = alloc_expr();
-    expr->kind = EXPR_ARRAY;
-    expr->value.array = (array_expr_t) {
-        .len = len,
-        .exprs = exprs
+expr_t mk_array(expr_array_t exprs) {
+    return (expr_t) {
+        .kind = EXPR_ARRAY,
+        .value.array = exprs,
     };
-    return expr;
 }
 
-expr_t* mk_bool(bool val) {
-    expr_t* expr = alloc_expr();
-    expr->kind = EXPR_BOOL;
-    expr->value.bool_expr = val;
-    return expr;
+expr_t mk_bool(bool val) {
+    return (expr_t) {
+        .kind = EXPR_BOOL,
+        .value.bool_expr = val,
+    };
 }
 
-expr_t* mk_number(uint64_t number) {
-    expr_t* expr = alloc_expr();
-    expr->kind = EXPR_NUMBER;
-    expr->value.number = number;
-    return expr;
+expr_t mk_number(uint64_t number) {
+    return (expr_t) {
+        .kind = EXPR_NUMBER,
+        .value.number = number
+    };
 }
 
-expr_t* mk_string_expr(string_t string) {
-    expr_t* expr = alloc_expr();
-    expr->kind = EXPR_STRING;
-    expr->value.string = string;
-    return expr;
+expr_t mk_null() {
+    return (expr_t) {
+        .kind = EXPR_NULL,
+        .value = 0
+    };
 }
 
-expr_t* mk_ident(string_t ident) {
-    expr_t* expr = alloc_expr();
-    expr->kind = EXPR_IDENT;
-    expr->value.string = ident;
-    return expr;
+expr_t mk_string_expr(string_t string) {
+    return (expr_t) {
+        .kind = EXPR_STRING,
+        .value.string = string
+    };
 }
 
-stmt_t* alloc_stmt() {
-    stmt_t* stmt = malloc(sizeof(stmt_t));
-    memset(stmt, 0, sizeof(stmt_t));
-    return stmt;
+expr_t mk_ident(string_t ident) {
+    return (expr_t) {
+        .kind = EXPR_IDENT,
+        .value.string = ident
+    };
 }
 
-stmt_t* mk_if(
-    expr_t* main_cond,
-    block_t* main_block,
-    uint32_t elif_len,
-    expr_t** elif_conds,
-    block_t** elif_blocks,
+stmt_t mk_if(
+    expr_t main_cond,
+    block_t main_block,
+    expr_array_t elif_conds,
+    block_array_t elif_blocks,
     block_t* else_block
 ) {
-    stmt_t* stmt = alloc_stmt();
-    stmt->kind = STMT_IF;
-    stmt->value.if_stmt = (if_stmt_t) {
-        .main_cond = main_cond,
-        .main_block = main_block,
-        .elif_len = elif_len,
-        .elif_conds = elif_conds,
-        .elif_blocks = elif_blocks,
-        .else_block = else_block
+    assert((arr_get_size(elif_conds) == arr_get_size(elif_blocks)));
+    return (stmt_t) {
+        .kind = STMT_IF,
+        .value.if_stmt = (if_stmt_t) {
+            .main_cond = box_expr(main_cond),
+            .main_block = main_block,
+            .elif_conds = elif_conds,
+            .elif_blocks = elif_blocks,
+            .else_block = else_block
+        }
     };
-    return stmt;
 }
 
-stmt_t* mk_while(expr_t* cond, block_t* block) {
-    stmt_t* stmt = alloc_stmt();
-    stmt->kind = STMT_WHILE;
-    stmt->value.while_stmt = (while_stmt_t) {
-        .cond = cond,
-        .block = block
+stmt_t mk_while(expr_t cond, block_t block) {
+    return (stmt_t) {
+        .kind = STMT_WHILE,
+        .value.while_stmt = (while_stmt_t) {
+            .cond = box_expr(cond),
+            .block = block,
+        }
     };
-    return stmt;
 }
 
-stmt_t* mk_return(expr_t* expr) {
-    stmt_t* stmt = alloc_stmt();
-    stmt->kind = STMT_RETURN;
-    stmt->value.expr = expr;
-    return stmt;
-}
-
-stmt_t* mk_assign_normal(string_t ident, expr_t* value) {
-    stmt_t* stmt = alloc_stmt();
-    stmt->kind = STMT_ASSIGN_NORMAL;
-    stmt->value.assign_normal = (assign_normal_t) {
-        .ident = ident,
-        .value = value
+stmt_t mk_return(expr_t expr) {
+    return (stmt_t) {
+        .kind = STMT_RETURN,
+        .value.expr = box_expr(expr)
     };
-    return stmt;
 }
 
-stmt_t* mk_assign_array(expr_t* array, expr_t* index, expr_t* value) {
-    stmt_t* stmt = alloc_stmt();
-    stmt->kind = STMT_ASSIGN_ARRAY;
-    stmt->value.assign_array = (assign_array_t) {
-        .array = array,
-        .index = index,
-        .value = value
+stmt_t mk_assign_normal(bool global, string_t ident, expr_t value) {
+    return (stmt_t) {
+        .kind = global ? STMT_GLOBAL_ASSIGN_NORMAL : STMT_ASSIGN_NORMAL,
+        .value.assign_normal = (assign_normal_t) {
+            .ident = ident,
+            .value = box_expr(value)
+        }
     };
-    return stmt;
 }
 
-stmt_t* mk_do(expr_t* expr) {
-    stmt_t* stmt = alloc_stmt();
-    stmt->kind = STMT_DO;
-    stmt->value.expr = expr;
-    return stmt;
-}
-
-block_t* mk_block(uint32_t len, stmt_t** stmts) {
-    block_t* block = malloc(sizeof(block_t));
-    memset(block, 0, sizeof(block_t));
-    block->len = len;
-    block->stmts = stmts;
-    return block;
-}
-
-decl_t* alloc_decl() {
-    decl_t* decl = malloc(sizeof(decl_t));
-    memset(decl, 0, sizeof(decl_t));
-    return decl;
-}
-
-decl_t* mk_fn_decl(string_t name, uint32_t arity, string_t* args, block_t* block) {
-    decl_t* decl = alloc_decl();
-    decl->kind = DECL_FUNCTION;
-    decl->value.fn = (fn_decl_t) {
-        .name = name,
-        .arity = arity,
-        .args = args,
-        .block = block
+stmt_t mk_assign_array(bool global, expr_t array, expr_t index, expr_t value) {
+    return (stmt_t) {
+        .kind = global ? STMT_GLOBAL_ASSIGN_ARRAY : STMT_ASSIGN_ARRAY,
+        .value.assign_array = (assign_array_t) {
+            .array = box_expr(array),
+            .index = box_expr(index),
+            .value = box_expr(value)
+        }
     };
-    return decl;
 }
 
-decl_t* mk_global(string_t ident) {
-    decl_t* decl = alloc_decl();
-    decl->kind = DECL_GLOBAL;
-    decl->value.str = ident;
-    return decl;
+stmt_t mk_do(expr_t expr) {
+    return (stmt_t) {
+        .kind = STMT_DO,
+        .value = box_expr(expr)
+    };
 }
 
-decl_t* mk_import(string_t str) {
-    decl_t* decl = alloc_decl();
-    decl->kind = DECL_IMPORT;
-    decl->value.str = str;
-    return decl;
+decl_t mk_fn_decl(string_t name, string_array_t args, block_t block) {
+    return (decl_t) {
+        .kind = DECL_FUNCTION,
+        .value.fn = (fn_decl_t) {
+            .name = name,
+            .args = args,
+            .block = block
+        }
+    };
 }
 
-program_t* mk_program(uint32_t len, decl_t** decls) {
-    program_t* program = malloc(sizeof(program_t));
-    memset(program, 0, sizeof(program_t));
-    program->len = len;
-    program->decls = decls;
-    return program;
+decl_t mk_global(string_t ident) {
+    return (decl_t) {
+        .kind = DECL_GLOBAL,
+        .value.string = ident
+    };
 }
 
-#define BOX_IMPL(ty, plural) \
-    ty* box_##plural(uint32_t len, ty* plural) { \
-        ty* new_##plural = malloc(sizeof(ty) * len); \
-        memcpy(new_##plural, plural, sizeof(ty) * len); \
-        return new_##plural; \
-    }
-
-BOX_IMPL(expr_t*, exprs)
-BOX_IMPL(stmt_t*, stmts)
-BOX_IMPL(block_t*, blocks)
-BOX_IMPL(decl_t*, decls)
-BOX_IMPL(string_t, strings)
+decl_t mk_import(string_t string) {
+    return (decl_t) {
+        .kind = DECL_IMPORT,
+        .value.string = string
+    };
+}
