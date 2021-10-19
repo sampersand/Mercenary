@@ -36,9 +36,9 @@ if-statement :=
   ;
 while-statement := 'while' '(' <expression> ')' <brace-statements> ;
 return-statement := 'return' [<expression>] ';' ;
-assignment
- := 'let' <identifier> '=' <expression> ';' (* normal assignment *)
-  | 'let' <primary> '[' <expression> ']' '=' <expression> ';' (* array assignment *)
+assignment (* `global` is used when assigning to global variables *)
+ := ('let' | 'global') <identifier> '=' <expression> ';' (* normal assignment *)
+  | ('let' | 'global') <primary> '[' <expression> ']' '=' <expression> ';' (* array assignment *)
   ;
 
 (* No order of operations lol *)
@@ -58,7 +58,7 @@ primary
   ;
 
 literal
- := 'true' | 'false'
+ := 'true' | 'false' | 'null'
   | <number>
   | <string>
   | <identifier>
