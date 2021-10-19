@@ -59,6 +59,7 @@ int main(int argc, char** argv) {
     pres_t res = parse_program(&stream, &program);
     
     if (!res) {
+        free(file);
         return -1;
     }
 

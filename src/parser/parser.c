@@ -32,7 +32,7 @@ pres_t parse_program(const char** stream, program_t* program) {
                 break;
             }
             case PARSE_BAD: {
-                arr_free(*program);
+                free_program(*program);
                 return PARSE_BAD;
             }
             default: return PARSE_OK;
