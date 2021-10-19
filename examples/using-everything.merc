@@ -1,0 +1,178 @@
+/* This is a comment */
+/* `/*`` inside comments are ignored */
+
+function assert(condition) {
+	if (!condition) {
+		do print("condition failed");
+		do exit(1);
+	}
+}
+function noop() { } /* returns null */
+function takes_no_args() { return 34; }
+function add(a, b) { return a + b; }
+function basic_functions() {
+	do assert(noop() == null);
+	do assert(takes_no_args() == 34);
+	do assert(add(3, 4) == 7);
+}
+
+function numbers() {
+	do assert((12 + 22) == 34);
+	do assert((12 - 22) == -10);
+	do assert((12 * 22) == 264);
+	do assert((7 / 3) == 2); /* round down */
+	do assert((7 % 3) == 1); /* round down */
+
+	do assert(975 == 0975); /* leading `0` is allowed, and ignored */
+	do assert(123 != 124);
+	do assert(12 < 13);
+	do assert(-12 < 1);
+	do assert(-1 > -4);
+	do assert(13 > 12);
+	do assert(0 > -1);
+}
+
+function booleans_and_null() {
+	/* comparisons */
+	do assert(true == true);
+	do assert(true != false);
+	do assert(false == false);
+	do assert(false != true);
+
+	/* negation (only needs to work for booleans) */
+	do assert(!true == false);
+	do assert(!false == true);
+
+	/* null compares false to everything but null */
+	do assert(null == null);
+	do assert(null != false);
+	do assert(null != 0);
+	do assert(null != "");
+}
+
+function strings() {
+	/* length and escapes */
+	do assert(length("") == 0);
+	do assert(length("abc") == 3);
+	do assert(length("a\nb\tc") == 5);
+	do assert(length('a\nb\tc') == 7); /* single quotes dont escape */
+
+	/* indexing into strings */
+	do assert("abc"[1] == 'b');
+	do assert("foobar"[0] == 'f');
+
+	/* strings operations */
+	do assert(("foo" + "bar") == "foobar"); /* concat */
+	do assert(("foo" * 3) == "foofoofoo"); /* repetition */
+	do assert('!' < 'a'); /* lexicographical comparison (via ascii values) */
+}
+
+function arrays() {
+	let empty = [];
+	let constructed = ['a', true, 9];
+
+	do assert(length(empty) == 0);
+	do assert(length(constructed) == 3);
+
+	let constructed[0] = 'b';
+	do assert(constructed == ['b', true, 9]);
+
+	do insert(constructed, 1, [1,2]);
+	do assert(constructed == ['b', [1, 2], true, 9]);
+
+	do delete(constructed, 2);
+	do assert(constructed == ['b', [1, 2], 9]);
+}
+
+function statements() {
+	if (add(4, 9) == 13) {
+		/* passes */
+	} else {
+		do assert(false);
+	}
+
+	let i = 0;
+	let sum = 0;
+	while (i <= 10) {
+		let i = i + 1;
+		let sum = sum + i;
+	}
+	do assert(sum == 55);
+
+	if (true) {
+		/* passes */
+	} else if (false) {
+		do assert(false);
+	} else {
+		do assert(false);
+	}
+
+	if (false) {
+		do assert(false);
+	} else if (true) {
+		/* passes */
+	} else {
+		do assert(false);
+	}
+
+	if (false) {
+		do assert(false);
+	} else if (false) {
+		do assert(false);
+	} else {
+		/* passes */
+	}
+}
+
+function remaining_builtins() {
+	do assert(itoa(-123) == "-123");
+	do assert(itoa(0) == "0");
+	do assert(itoa(9991) == "9991");
+
+	/* strip leading whitespace, and take characters until a non-digit is encountered.
+	 * (this follows how c's `atoi` works)
+	 */
+	do assert(atoi("-123") == -123);
+	do assert(atoi("  12\n") == 12);
+	do assert(atoi(" ") == 0); /* invalid strings are zero */
+
+	do assert(kindof(true) == 'boolean');
+	do assert(kindof(false) == 'boolean');
+	do assert(kindof(null) == 'null');
+	do assert(kindof(12) == 'integer');
+	do assert(kindof(-12) == 'integer');
+	do assert(kindof(0) == 'integer');
+	do assert(kindof("a") == 'string');
+	do assert(kindof("") == 'string');
+	do assert(kindof("bcdef") == 'string');
+	do assert(kindof([]) == 'array');
+	do assert(kindof([1,2,3]) == 'array');
+	do assert(kindof(["A",true,9,12,3,null]) == 'array');
+}
+
+global global_variable; /* has no constructor */
+function set_global(value) { global global_variable = value; }
+function get_global() { return global_variable; }
+function globals() {
+	do assert(global_variable == null); /* starts out as null */
+	do set_global(23);
+	do assert(get_global() == 23);
+}
+
+import "./greet.merc"; /* relative to this file */
+
+function imported() {
+	do assert(greet("world") == "Hello, world!");
+}
+
+function main(argv) {
+	do basic_functions();
+	do numbers();
+	do booleans_and_null();
+	do strings();
+	do arrays();
+	do statements();
+	do remaining_builtins();
+	do globals();
+	do imported();
+}

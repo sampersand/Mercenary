@@ -1,0 +1,3 @@
+function greet(what) {
+	do print("Hello, " + what + "!\n");
+}
