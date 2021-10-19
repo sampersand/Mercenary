@@ -1,5 +1,6 @@
 section .text
 global read_token
+global read_token_unix
 
 %define TOKEN_ERROR 256
 %define TOKEN_IDENTIFIER 257
