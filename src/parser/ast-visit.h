@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #define FN(ident, args) void (*ident)(ast_visitor_t*, args)
+#define FN_(ident) void (*ident)(ast_visitor_t*)
 
 struct ast_visitor;
 typedef struct ast_visitor ast_visitor_t;
@@ -20,6 +21,7 @@ struct ast_visitor {
     FN(visit_string_expr, string_t*);
     FN(visit_ident_expr, string_t*);
     FN(visit_array_expr, array_expr_t*);
+    FN_(visit_null_expr);
     FN(visit_expr, expr_t*);
     FN(visit_expr_pre, expr_t*);
     FN(visit_expr_post, expr_t*);
@@ -30,6 +32,8 @@ struct ast_visitor {
     FN(visit_do_stmt, expr_t*);
     FN(visit_assign_normal, assign_normal_t*);
     FN(visit_assign_array, assign_array_t*);
+    FN(visit_global_assign_normal, assign_normal_t*);
+    FN(visit_global_assign_array, assign_array_t*);
     FN(visit_stmt, stmt_t*);
     FN(visit_stmt_pre, stmt_t*);
     FN(visit_stmt_post, stmt_t*);
@@ -59,6 +63,7 @@ void walk_number_expr(ast_visitor_t* visitor, uint64_t* expr);
 void walk_string_expr(ast_visitor_t* visitor, string_t* expr);
 void walk_ident_expr(ast_visitor_t* visitor, string_t* expr);
 void walk_array_expr(ast_visitor_t* visitor, array_expr_t* expr);
+void walk_null_expr(ast_visitor_t* visitor);
 void walk_expr(ast_visitor_t* visitor, expr_t* expr);
 void walk_expr_pre(ast_visitor_t* visitor, expr_t* expr);
 void walk_expr_post(ast_visitor_t* visitor, expr_t* expr);
@@ -69,6 +74,8 @@ void walk_return_stmt(ast_visitor_t* visitor, expr_t* stmt);
 void walk_do_stmt(ast_visitor_t* visitor, expr_t* stmt);
 void walk_assign_normal(ast_visitor_t* visitor, assign_normal_t* stmt);
 void walk_assign_array(ast_visitor_t* visitor, assign_array_t* stmt);
+void walk_global_assign_normal(ast_visitor_t* visitor, assign_normal_t* stmt);
+void walk_global_assign_array(ast_visitor_t* visitor, assign_array_t* stmt);
 void walk_stmt(ast_visitor_t* visitor, stmt_t* stmt);
 void walk_stmt_pre(ast_visitor_t* visitor, stmt_t* stmt);
 void walk_stmt_post(ast_visitor_t* visitor, stmt_t* stmt);
@@ -100,6 +107,7 @@ static ast_visitor_t DEFAULT_VISITOR = {
     .visit_string_expr = walk_string_expr,
     .visit_ident_expr = walk_ident_expr,
     .visit_array_expr = walk_array_expr,
+    .visit_null_expr = walk_null_expr,
     .visit_expr = walk_expr,
     .visit_expr_pre = walk_expr_pre,
     .visit_expr_post = walk_expr_post,
@@ -110,6 +118,8 @@ static ast_visitor_t DEFAULT_VISITOR = {
     .visit_do_stmt = walk_do_stmt,
     .visit_assign_normal = walk_assign_normal,
     .visit_assign_array = walk_assign_array,
+    .visit_global_assign_normal = walk_global_assign_normal,
+    .visit_global_assign_array = walk_global_assign_array,
     .visit_stmt = walk_stmt,
     .visit_stmt_pre = walk_stmt_pre,
     .visit_stmt_post = walk_stmt_post,

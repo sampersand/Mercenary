@@ -6,13 +6,11 @@ LDFLAGS += -no-pie
 NASM_FORMAT ?= elf64
 
 ifeq ($(ENABLE_ASAN),1)
-	CC = clang
 	LDFLAGS += -fsanitize=address
 	CFLAGS += -fsanitize=address
 endif
 
 ifeq ($(ENABLE_UBSAN),1)
-	CC = clang
 	LDFLAGS += -fsanitize=undefined
 	CFLAGS += -fsanitize=undefined
 endif

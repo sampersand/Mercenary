@@ -3,13 +3,13 @@
 #include <string.h>
 #include "ast-visit.h"
 
-#define PLURAL_WRAPPER(singular, plural) \
-    void free_##plural(uint32_t len, singular##_t** plural) { \
-        for (int i = 0; i < len; i++) { \
-            free_##singular(plural[i]); \
-        } \
-        free(plural); \
-    }
+// #define PLURAL_WRAPPER(singular, plural) \
+//     void free_##plural(uint32_t len, singular##_t** plural) { \
+//         for (int i = 0; i < len; i++) { \
+//             free_##singular(plural[i]); \
+//         } \
+//         free(plural); \
+//     }
 
 void free_fn_decl(ast_visitor_t* visitor, fn_decl_t* decl) {
     free(decl->args);

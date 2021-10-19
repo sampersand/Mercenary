@@ -128,6 +128,24 @@ void pp_assign_array(ast_visitor_t* visitor, assign_array_t* stmt) {
     printf("))");
 }
 
+void pp_global_assign_normal(ast_visitor_t* visitor, assign_normal_t* stmt) {
+    printf("(global-assign ");
+    print_string(stmt->ident);
+    printf(" (expr ");
+    visitor->visit_expr(visitor, stmt->value);
+    printf("))");
+}
+
+void pp_global_assign_array(ast_visitor_t* visitor, assign_array_t* stmt) {
+    printf("(global-assign-array (expr ");
+    visitor->visit_expr(visitor, stmt->array);
+    printf(") (expr ");
+    visitor->visit_expr(visitor, stmt->index);
+    printf(") (expr ");
+    visitor->visit_expr(visitor, stmt->value);
+    printf("))");
+}
+
 void pp_binop_expr(ast_visitor_t* visitor, binop_expr_t* expr) {
     const char* op;
     switch (expr->op) {
@@ -230,6 +248,8 @@ ast_visitor_t* pp_visitor() {
     visitor->visit_do_stmt = pp_do_stmt;
     visitor->visit_assign_normal = pp_assign_normal;
     visitor->visit_assign_array = pp_assign_array;
+    visitor->visit_global_assign_normal = pp_global_assign_normal;
+    visitor->visit_global_assign_array = pp_global_assign_array;
     visitor->visit_binop_expr = pp_binop_expr;
     visitor->visit_unop_expr = pp_unop_expr;
     visitor->visit_call_expr = pp_call_expr;

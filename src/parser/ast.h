@@ -76,7 +76,8 @@ struct expr {
         EXPR_NUMBER,
         EXPR_STRING,
         EXPR_IDENT,
-        EXPR_ARRAY
+        EXPR_ARRAY,
+        EXPR_NULL,
     } kind;
     union {
         // EXPR_BINARY
@@ -138,6 +139,8 @@ typedef struct {
         STMT_RETURN,
         STMT_ASSIGN_NORMAL,
         STMT_ASSIGN_ARRAY,
+        STMT_GLOBAL_ASSIGN_NORMAL,
+        STMT_GLOBAL_ASSIGN_ARRAY,
         STMT_DO
     } kind;
     union {
@@ -147,9 +150,9 @@ typedef struct {
         while_stmt_t while_stmt;
         // STMT_RETURN, STMT_DO
         expr_t* expr;
-        // STMT_ASSIGN_NORMAL
+        // STMT_ASSIGN_NORMAL, STMT_GLOBAL_ASSIGN_NORMAL
         assign_normal_t assign_normal;
-        // STMT_ASSIGN_ARRAY
+        // STMT_ASSIGN_ARRAY, STMT_GLOBAL_ASSIGN_ARRAY
         assign_array_t assign_array;
     } value;
 } stmt_t;

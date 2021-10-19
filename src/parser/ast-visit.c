@@ -27,6 +27,7 @@ void walk_array_expr(ast_visitor_t* visitor, array_expr_t* expr) {
         visitor->visit_expr(visitor, expr->exprs[i]);
     }
 }
+void walk_null_expr(ast_visitor_t* visitor) {}
 void walk_expr(ast_visitor_t* visitor, expr_t* expr) {
     visitor->visit_expr_pre(visitor, expr);
     switch (expr->kind) {
@@ -66,6 +67,10 @@ void walk_expr(ast_visitor_t* visitor, expr_t* expr) {
             visitor->visit_array_expr(visitor, &expr->value.array);
             break;
         }
+        case EXPR_NULL: {
+            visitor->visit_null_expr(visitor);
+            break;
+        }
     }
     visitor->visit_expr_post(visitor, expr);
 }
@@ -101,6 +106,14 @@ void walk_assign_array(ast_visitor_t* visitor, assign_array_t* stmt) {
     visitor->visit_expr(visitor, stmt->index);
     visitor->visit_expr(visitor, stmt->value);
 }
+void walk_global_assign_normal(ast_visitor_t* visitor, assign_normal_t* stmt) {
+    visitor->visit_expr(visitor, stmt->value);
+}
+void walk_global_assign_array(ast_visitor_t* visitor, assign_array_t* stmt) {
+    visitor->visit_expr(visitor, stmt->array);
+    visitor->visit_expr(visitor, stmt->index);
+    visitor->visit_expr(visitor, stmt->value);
+}
 void walk_stmt(ast_visitor_t* visitor, stmt_t* stmt) {
     visitor->visit_stmt_pre(visitor, stmt);
     switch (stmt->kind) {
@@ -122,6 +135,14 @@ void walk_stmt(ast_visitor_t* visitor, stmt_t* stmt) {
         }
         case STMT_ASSIGN_ARRAY: {
             visitor->visit_assign_array(visitor, &stmt->value.assign_array);
+            break;
+        }
+        case STMT_GLOBAL_ASSIGN_NORMAL: {
+            visitor->visit_global_assign_normal(visitor, &stmt->value.assign_normal);
+            break;
+        }
+        case STMT_GLOBAL_ASSIGN_ARRAY: {
+            visitor->visit_global_assign_array(visitor, &stmt->value.assign_array);
             break;
         }
         case STMT_DO: {
