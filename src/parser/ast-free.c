@@ -20,10 +20,6 @@ void free_program_post(ast_visitor_t* visitor, program_t* program) {
     arr_free(*program);
 }
 
-void free_decl_post(ast_visitor_t* visitor, decl_t* decl) {
-    free(decl);
-}
-
 void free_block_post(ast_visitor_t* visitor, block_t* block) {
     arr_free(*block);
 }
@@ -66,7 +62,6 @@ ast_visitor_t free_visitor() {
     ast_visitor_t visitor = DEFAULT_VISITOR;
     visitor.visit_fn_decl = free_fn_decl;
     visitor.visit_program_post = free_program_post;
-    visitor.visit_decl_post = free_decl_post;
     visitor.visit_block_post = free_block_post;
     visitor.visit_expr_post = free_expr_post;
     visitor.visit_call_expr = free_call_expr;

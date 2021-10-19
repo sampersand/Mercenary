@@ -96,14 +96,16 @@ inline static size_t ACB__(size_t idx, size_t limit, const char* file, int line)
 #endif
 
 #define arr_alloc(arr) do { \
+	/* looks to be triggering incorrectly? */ \
+	/* NOLINTNEXTLINE(bugprone-sizeof-expression) */ \
 	(arr) = malloc(sizeof(arr) + (arr_default_cap * sizeof((arr)->dat[0]))); \
 	(arr)->cap = arr_default_cap; \
 	(arr)->siz = 0; \
 } while (0)
 
 #define arr_append(arr) (*({ \
-	arr = arr_reserve_cap__((arr_unit_array)arr, sizeof(arr->dat[0])); \
-	&arr->dat[arr->siz++]; \
+	(arr) = arr_reserve_cap__((arr_unit_array)(arr), sizeof((arr)->dat[0])); \
+	&(arr)->dat[(arr)->siz++]; \
 }))
 
 #define arr_indexof(arr, val) ({ \

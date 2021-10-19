@@ -1,0 +1,4 @@
+function foo()
+function foo(bar)
+function foo(bar, baz)
+function foo(

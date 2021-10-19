@@ -15,7 +15,15 @@ string_t mk_string(const char* s, uint32_t len) {
 }
 
 string_t mk_string_cstr(const char* s) {
+    size_t len = strlen(s);
+    assert(len <= (size_t)(uint32_t)-1);
     return mk_string(s, strlen(s));
+}
+
+string_t mk_string_2ptrs(const char* start, const char* end) {
+    size_t len = end - start;
+    assert(len <= (size_t)(uint32_t)-1);
+    return mk_string(start, end - start);
 }
 
 expr_t* box_expr(expr_t expr) {

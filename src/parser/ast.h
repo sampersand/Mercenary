@@ -194,8 +194,10 @@ typedef decl_array_t program_t;
 
 // Make a string from a char* with a given length.
 string_t mk_string(const char* s, uint32_t len);
-// Make a string from a null-terminated C-string
+// Make a string from a null-terminated C-string.
 string_t mk_string_cstr(const char* s);
+// Make a string from a start and end pointer.
+string_t mk_string_2ptrs(const char* start, const char* end);
 
 /* === Make various expression types === */
 
@@ -237,3 +239,6 @@ block_t mk_block(stmt_array_t stmts);
 decl_t mk_fn_decl(string_t name, string_array_t args, block_t block);
 decl_t mk_global(string_t ident);
 decl_t mk_import(string_t string);
+
+// Free a program.
+void free_program(program_t program);

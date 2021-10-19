@@ -29,7 +29,7 @@ src/parser/main: $(parser_objs) src/lexer/lexer.o
 
 $(parser_objs): %.o: %.c
 
-src/lexer/lexer.o:
+src/lexer/lexer.o: src/lexer/lexer.asm
 	nasm -f$(NASM_FORMAT) $(ASMFLAGS) src/lexer/lexer.asm
 
 src/lexer/main: src/lexer/main.o src/lexer/lexer.o

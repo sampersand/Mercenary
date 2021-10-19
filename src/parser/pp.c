@@ -238,6 +238,8 @@ ast_visitor_t pp_visitor() {
     visitor.visit_decl_pre = pp_decl_pre;
     visitor.visit_decl_post = pp_decl_post;
     visitor.visit_fn_decl = pp_fn_decl;
+    visitor.visit_global_decl = pp_global_decl;
+    visitor.visit_import_decl = pp_import_decl;
     visitor.visit_block = pp_block;
     visitor.visit_stmt_pre = pp_stmt_pre;
     visitor.visit_stmt_post = pp_stmt_post;

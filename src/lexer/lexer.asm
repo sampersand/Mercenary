@@ -199,6 +199,7 @@ read_string:
 .loop:
 	add rdx, 1
 
+.loop_after_escape:
 	cmp word [rdx], 0x275C ; \'
 	je .escapes
 	cmp word [rdx], 0x225C ; \"
@@ -213,7 +214,7 @@ read_string:
 .escapes:
 	; We need to skip both the backslash and escape char
 	add rdx, 2
-	jmp .loop
+	jmp .loop_after_escape
 .loop_exit:
 	; output a token
 	add rdx, 1 ; skip end quote
@@ -328,7 +329,6 @@ read_ident:
 	cmp r11, r10
 	mov r10d, TOKEN_GLOBAL
 	cmove rax, r10
-	jmp .default_ident
 
 	mov r10, 0x74726F706D69 ; import
 	cmp r11, r10
