@@ -1,6 +1,7 @@
 (comments are `/* ... */`, like in c++)
 global
 function
+import
 if
 else
 while
@@ -9,6 +10,7 @@ do
 let
 true
 false
+null
 ;
 =
 (
