@@ -30,10 +30,8 @@ struct ast_visitor {
     FN(visit_while_stmt, while_stmt_t*);
     FN(visit_return_stmt, expr_t*);
     FN(visit_do_stmt, expr_t*);
-    FN(visit_assign_normal, assign_normal_t*);
-    FN(visit_assign_array, assign_array_t*);
-    FN(visit_global_assign_normal, assign_normal_t*);
-    FN(visit_global_assign_array, assign_array_t*);
+    FN(visit_declare_var, declare_var_t*);
+    FN(visit_assign_var, assign_var_t*);
     FN(visit_stmt, stmt_t*);
     FN(visit_stmt_pre, stmt_t*);
     FN(visit_stmt_post, stmt_t*);
@@ -72,10 +70,8 @@ void walk_if_stmt(ast_visitor_t* visitor, if_stmt_t* stmt);
 void walk_while_stmt(ast_visitor_t* visitor, while_stmt_t* stmt);
 void walk_return_stmt(ast_visitor_t* visitor, expr_t* stmt);
 void walk_do_stmt(ast_visitor_t* visitor, expr_t* stmt);
-void walk_assign_normal(ast_visitor_t* visitor, assign_normal_t* stmt);
-void walk_assign_array(ast_visitor_t* visitor, assign_array_t* stmt);
-void walk_global_assign_normal(ast_visitor_t* visitor, assign_normal_t* stmt);
-void walk_global_assign_array(ast_visitor_t* visitor, assign_array_t* stmt);
+void walk_declare_var(ast_visitor_t* visitor, declare_var_t* stmt);
+void walk_assign_var(ast_visitor_t* visitor, assign_var_t* stmt);
 void walk_stmt(ast_visitor_t* visitor, stmt_t* stmt);
 void walk_stmt_pre(ast_visitor_t* visitor, stmt_t* stmt);
 void walk_stmt_post(ast_visitor_t* visitor, stmt_t* stmt);
@@ -116,10 +112,8 @@ static ast_visitor_t DEFAULT_VISITOR = {
     .visit_while_stmt = walk_while_stmt,
     .visit_return_stmt = walk_return_stmt,
     .visit_do_stmt = walk_do_stmt,
-    .visit_assign_normal = walk_assign_normal,
-    .visit_assign_array = walk_assign_array,
-    .visit_global_assign_normal = walk_global_assign_normal,
-    .visit_global_assign_array = walk_global_assign_array,
+    .visit_declare_var = walk_declare_var,
+    .visit_assign_var = walk_assign_var,
     .visit_stmt = walk_stmt,
     .visit_stmt_pre = walk_stmt_pre,
     .visit_stmt_post = walk_stmt_post,

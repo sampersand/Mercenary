@@ -110,38 +110,27 @@ void pp_do_stmt(ast_visitor_t* visitor, expr_t* expr) {
     printf(")");
 }
 
-void pp_assign_normal(ast_visitor_t* visitor, assign_normal_t* stmt) {
-    printf("(assign ");
+void pp_declare_var(ast_visitor_t* visitor, declare_var_t* stmt) {
+    printf("(declare-var ");
     print_string(stmt->ident);
     printf(" (expr ");
     visitor->visit_expr(visitor, stmt->value);
     printf("))");
 }
 
-void pp_assign_array(ast_visitor_t* visitor, assign_array_t* stmt) {
-    printf("(assign-array (expr ");
-    visitor->visit_expr(visitor, stmt->array);
-    printf(") (expr ");
-    visitor->visit_expr(visitor, stmt->index);
-    printf(") (expr ");
-    visitor->visit_expr(visitor, stmt->value);
-    printf("))");
-}
-
-void pp_global_assign_normal(ast_visitor_t* visitor, assign_normal_t* stmt) {
-    printf("(global-assign ");
+void pp_assign_var(ast_visitor_t* visitor, assign_var_t* stmt) {
+    printf("(assign-var ");
     print_string(stmt->ident);
-    printf(" (expr ");
-    visitor->visit_expr(visitor, stmt->value);
-    printf("))");
-}
-
-void pp_global_assign_array(ast_visitor_t* visitor, assign_array_t* stmt) {
-    printf("(global-assign-array (expr ");
-    visitor->visit_expr(visitor, stmt->array);
-    printf(") (expr ");
-    visitor->visit_expr(visitor, stmt->index);
-    printf(") (expr ");
+    if (arr_get_size(stmt->indexes) > 0) {
+        printf(" (indices");
+        for (int i = 0; i < arr_get_size(stmt->indexes); i++) {
+            printf(" (expr ");
+            visitor->visit_expr(visitor, &arr_at(stmt->indexes, i));
+            printf(")");
+        }
+        printf(") ");
+    }
+    printf("(expr ");
     visitor->visit_expr(visitor, stmt->value);
     printf("))");
 }
@@ -247,10 +236,8 @@ ast_visitor_t pp_visitor() {
     visitor.visit_while_stmt = pp_while_stmt;
     visitor.visit_return_stmt = pp_return_stmt;
     visitor.visit_do_stmt = pp_do_stmt;
-    visitor.visit_assign_normal = pp_assign_normal;
-    visitor.visit_assign_array = pp_assign_array;
-    visitor.visit_global_assign_normal = pp_global_assign_normal;
-    visitor.visit_global_assign_array = pp_global_assign_array;
+    visitor.visit_declare_var = pp_declare_var;
+    visitor.visit_assign_var = pp_assign_var;
     visitor.visit_binop_expr = pp_binop_expr;
     visitor.visit_unop_expr = pp_unop_expr;
     visitor.visit_call_expr = pp_call_expr;

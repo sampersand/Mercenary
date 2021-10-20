@@ -1,4 +1,4 @@
-(* Mercenary's EBNF *)
+  (* Mercenary's EBNF *)
 
 (* Comments are able to be embedded between any two tokens, *)
 COMMENTS := '/*' (? Any non-*/ character sequence ?) '*/'
@@ -26,6 +26,7 @@ statement
   | <while-statement>
   | <return-statement>
   | <assignment>
+  | <declaration>
   | 'do' <expression> ';' (* eg `do print(123);` *)
   ;
 

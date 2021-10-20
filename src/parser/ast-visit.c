@@ -98,20 +98,13 @@ void walk_return_stmt(ast_visitor_t* visitor, expr_t* stmt) {
 void walk_do_stmt(ast_visitor_t* visitor, expr_t* stmt) {
     visitor->visit_expr(visitor, stmt);
 }
-void walk_assign_normal(ast_visitor_t* visitor, assign_normal_t* stmt) {
+void walk_declare_var(ast_visitor_t* visitor, declare_var_t* stmt) {
     visitor->visit_expr(visitor, stmt->value);
 }
-void walk_assign_array(ast_visitor_t* visitor, assign_array_t* stmt) {
-    visitor->visit_expr(visitor, stmt->array);
-    visitor->visit_expr(visitor, stmt->index);
-    visitor->visit_expr(visitor, stmt->value);
-}
-void walk_global_assign_normal(ast_visitor_t* visitor, assign_normal_t* stmt) {
-    visitor->visit_expr(visitor, stmt->value);
-}
-void walk_global_assign_array(ast_visitor_t* visitor, assign_array_t* stmt) {
-    visitor->visit_expr(visitor, stmt->array);
-    visitor->visit_expr(visitor, stmt->index);
+void walk_assign_var(ast_visitor_t* visitor, assign_var_t* stmt) {
+    for (int i = 0; i < arr_get_size(stmt->indexes); i++) {
+        visitor->visit_expr(visitor, &arr_at(stmt->indexes, i));
+    }
     visitor->visit_expr(visitor, stmt->value);
 }
 void walk_stmt(ast_visitor_t* visitor, stmt_t* stmt) {
@@ -129,20 +122,12 @@ void walk_stmt(ast_visitor_t* visitor, stmt_t* stmt) {
             visitor->visit_return_stmt(visitor, stmt->value.expr);
             break;
         }
-        case STMT_ASSIGN_NORMAL: {
-            visitor->visit_assign_normal(visitor, &stmt->value.assign_normal);
+        case STMT_DECLARE_VAR: {
+            visitor->visit_declare_var(visitor, &stmt->value.declare_var);
             break;
         }
-        case STMT_ASSIGN_ARRAY: {
-            visitor->visit_assign_array(visitor, &stmt->value.assign_array);
-            break;
-        }
-        case STMT_GLOBAL_ASSIGN_NORMAL: {
-            visitor->visit_global_assign_normal(visitor, &stmt->value.assign_normal);
-            break;
-        }
-        case STMT_GLOBAL_ASSIGN_ARRAY: {
-            visitor->visit_global_assign_array(visitor, &stmt->value.assign_array);
+        case STMT_ASSIGN_VAR: {
+            visitor->visit_assign_var(visitor, &stmt->value.assign_var);
             break;
         }
         case STMT_DO: {

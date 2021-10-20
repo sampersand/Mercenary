@@ -129,23 +129,21 @@ typedef struct {
 typedef struct {
     string_t ident;
     expr_t* value;
-} assign_normal_t;
+} declare_var_t;
 
 typedef struct {
-    expr_t* array;
-    expr_t* index;
+    string_t ident;
+    expr_array_t indexes;
     expr_t* value;
-} assign_array_t;
+} assign_var_t;
 
 typedef struct {
     enum {
         STMT_IF,
         STMT_WHILE,
         STMT_RETURN,
-        STMT_ASSIGN_NORMAL,
-        STMT_ASSIGN_ARRAY,
-        STMT_GLOBAL_ASSIGN_NORMAL,
-        STMT_GLOBAL_ASSIGN_ARRAY,
+        STMT_DECLARE_VAR,
+        STMT_ASSIGN_VAR,
         STMT_DO
     } kind;
     union {
@@ -155,10 +153,10 @@ typedef struct {
         while_stmt_t while_stmt;
         // STMT_RETURN, STMT_DO
         expr_t* expr;
-        // STMT_ASSIGN_NORMAL, STMT_GLOBAL_ASSIGN_NORMAL
-        assign_normal_t assign_normal;
-        // STMT_ASSIGN_ARRAY, STMT_GLOBAL_ASSIGN_ARRAY
-        assign_array_t assign_array;
+        // STMT_DECLARE_VAR
+        declare_var_t declare_var;
+        // STMT_ASSIGN_VAR
+        assign_var_t assign_var;
     } value;
 } stmt_t;
 
@@ -227,8 +225,8 @@ stmt_t mk_if(
 );
 stmt_t mk_while(expr_t cond, block_t block);
 stmt_t mk_return(expr_t expr);
-stmt_t mk_assign_normal(bool global, string_t ident, expr_t value);
-stmt_t mk_assign_array(bool global, expr_t array, expr_t index, expr_t value);
+stmt_t mk_declare_var(string_t ident, expr_t value);
+stmt_t mk_assign_var(string_t ident, expr_array_t indexes, expr_t value);
 stmt_t mk_do(expr_t expr);
 
 // Make a block.

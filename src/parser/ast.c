@@ -152,22 +152,22 @@ stmt_t mk_return(expr_t expr) {
     };
 }
 
-stmt_t mk_assign_normal(bool global, string_t ident, expr_t value) {
+stmt_t mk_declare_var(string_t ident, expr_t value) {
     return (stmt_t) {
-        .kind = global ? STMT_GLOBAL_ASSIGN_NORMAL : STMT_ASSIGN_NORMAL,
-        .value.assign_normal = (assign_normal_t) {
+        .kind = STMT_DECLARE_VAR,
+        .value.declare_var = (declare_var_t) {
             .ident = ident,
             .value = box_expr(value)
         }
     };
 }
 
-stmt_t mk_assign_array(bool global, expr_t array, expr_t index, expr_t value) {
+stmt_t mk_assign_var(string_t ident, expr_array_t indexes, expr_t value) {
     return (stmt_t) {
-        .kind = global ? STMT_GLOBAL_ASSIGN_ARRAY : STMT_ASSIGN_ARRAY,
-        .value.assign_array = (assign_array_t) {
-            .array = box_expr(array),
-            .index = box_expr(index),
+        .kind = STMT_ASSIGN_VAR,
+        .value.assign_var = (assign_var_t) {
+            .ident = ident,
+            .indexes = indexes,
             .value = box_expr(value)
         }
     };

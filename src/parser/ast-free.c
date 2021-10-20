@@ -58,6 +58,14 @@ void free_if_stmt(ast_visitor_t* visitor, if_stmt_t* stmt) {
     }
 }
 
+void free_assign_var(ast_visitor_t* visitor, assign_var_t* stmt) {
+    for (int i = 0; i < arr_get_size(stmt->indexes); i++) {
+        visitor->visit_expr(visitor, &arr_at(stmt->indexes, i));
+    }
+    arr_free(stmt->indexes);
+    visitor->visit_expr(visitor, stmt->value);
+}
+
 ast_visitor_t free_visitor() {
     ast_visitor_t visitor = DEFAULT_VISITOR;
     visitor.visit_fn_decl = free_fn_decl;
@@ -67,6 +75,7 @@ ast_visitor_t free_visitor() {
     visitor.visit_call_expr = free_call_expr;
     visitor.visit_array_expr = free_array_expr;
     visitor.visit_if_stmt = free_if_stmt;
+    visitor.visit_assign_var = free_assign_var;
 
     return visitor;
 }
