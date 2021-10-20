@@ -95,6 +95,8 @@ read_token:
 	; **********************************
 	cmp rax, '"'
 	je read_string
+	cmp rax, "'"
+	je read_string2
 
 	; **********************************
 	; SYMBOLS
@@ -209,6 +211,34 @@ read_string:
 	
 	; Read normal character, exit if end quote
 	cmp byte [rdx], '"'
+	je .loop_exit
+	jmp .loop
+.escapes:
+	; We need to skip both the backslash and escape char
+	add rdx, 2
+	jmp .loop_after_escape
+.loop_exit:
+	; output a token
+	add rdx, 1 ; skip end quote
+
+	mov qword [rcx], r9
+	mov qword [rcx + 8], rdx
+	mov qword [rcx + 16], TOKEN_STRING
+	ret
+
+read_string2:
+	mov r9, rdx ; save the start position (starting after the quotes)
+.loop:
+	add rdx, 1
+
+.loop_after_escape:
+	cmp word [rdx], 0x275C ; \'
+	je .escapes
+	cmp word [rdx], 0x5C5C ; \\
+	je .escapes
+	
+	; Read normal character, exit if end quote
+	cmp byte [rdx], "'"
 	je .loop_exit
 	jmp .loop
 .escapes:
