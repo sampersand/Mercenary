@@ -102,8 +102,8 @@ void walk_declare_var(ast_visitor_t* visitor, declare_var_t* stmt) {
     visitor->visit_expr(visitor, stmt->value);
 }
 void walk_assign_var(ast_visitor_t* visitor, assign_var_t* stmt) {
-    for (int i = 0; i < arr_get_size(stmt->indexes); i++) {
-        visitor->visit_expr(visitor, &arr_at(stmt->indexes, i));
+    for (int i = 0; i < arr_get_size(stmt->indices); i++) {
+        visitor->visit_expr(visitor, &arr_at(stmt->indices, i));
     }
     visitor->visit_expr(visitor, stmt->value);
 }

@@ -6,9 +6,11 @@
 
 // TODO proper error handling lmao
 
-pres_t expect(const char** stream, uint64_t type, const char* error, Token* tok) {
+pres_t expect(const char** stream, uint64_t type, const char* error, Token* tok, bool peek) {
     Token t = read_token(*stream);
-    *stream = t.end;
+    if (!peek) {
+        *stream = t.end;
+    }
 
     if (t.type == type) {
         if (tok != NULL) {
@@ -57,8 +59,8 @@ pres_t parse_decl(const char** stream, decl_t* decl) {
         }
         case TOKEN_IMPORT: {
             Token string;
-            if (!expect(stream, TOKEN_STRING, "expected string", &string) ||
-                !expect(stream, ';', "expected semicolon", NULL)) {
+            if (!expect(stream, TOKEN_STRING, "expected string", &string, false) ||
+                !expect(stream, ';', "expected semicolon", NULL, false)) {
                 return PARSE_BAD;
             }
             *decl = mk_import(mk_string_2ptrs(string.start, string.end));
@@ -66,8 +68,8 @@ pres_t parse_decl(const char** stream, decl_t* decl) {
         }
         case TOKEN_GLOBAL: {
             Token ident;
-            if (!expect(stream, TOKEN_IDENTIFIER, "expected identifier", &ident) ||
-                !expect(stream, ';', "expected semicolon", NULL)) {
+            if (!expect(stream, TOKEN_IDENTIFIER, "expected identifier", &ident, false) ||
+                !expect(stream, ';', "expected semicolon", NULL, false)) {
                 return PARSE_BAD;
             }
             *decl = mk_global(mk_string_2ptrs(ident.start, ident.end));
@@ -75,8 +77,8 @@ pres_t parse_decl(const char** stream, decl_t* decl) {
         }
         case TOKEN_FUNCTION: {
             Token name;
-            if (!expect(stream, TOKEN_IDENTIFIER, "expected identifier", &name) ||
-                !expect(stream, '(', "expected opening paren", NULL)) {
+            if (!expect(stream, TOKEN_IDENTIFIER, "expected identifier", &name, false) ||
+                !expect(stream, '(', "expected opening paren", NULL, false)) {
                 return PARSE_BAD;
             }
             
@@ -105,7 +107,7 @@ pres_t parse_decl(const char** stream, decl_t* decl) {
                     }
                     case ',': {
                         Token ident;
-                        if (!expect(stream, TOKEN_IDENTIFIER, "expected ident", &ident)) {
+                        if (!expect(stream, TOKEN_IDENTIFIER, "expected ident", &ident, false)) {
                             arr_free(args);
                             return PARSE_BAD;
                         }
@@ -125,8 +127,10 @@ pres_t parse_decl(const char** stream, decl_t* decl) {
                 is_first = false;
             }
             block_t block;
-            arr_alloc(block);
-            // TODO: blocks
+            if (!parse_block(stream, &block)) {
+                arr_free(args);
+                return PARSE_BAD;
+            }
             *decl = mk_fn_decl(mk_string_2ptrs(name.start, name.end), args, block);
             break;
         }
@@ -136,5 +140,129 @@ pres_t parse_decl(const char** stream, decl_t* decl) {
         }
     }
 
+    return PARSE_OK;
+}
+
+pres_t parse_block(const char** stream, block_t* block) {
+    arr_alloc(*block);
+
+    if (!expect(stream, '{', "expected `{`", NULL, false)) {
+        free_block(*block);
+        return PARSE_BAD;
+    }
+
+    bool cont = true;
+    while (cont) {
+        Token peek = read_token(*stream);
+
+        if (peek.type == '}') {
+            *stream = peek.end;
+            return PARSE_OK;
+        }
+
+        stmt_t stmt;
+        switch (parse_stmt(stream, &stmt)) {
+            case PARSE_OK: {
+                arr_append(*block) = stmt;
+                break;
+            }
+            case PARSE_BAD: {
+                free_block(*block);
+                return PARSE_BAD;
+            }
+            default: {
+                cont = false;
+                break;
+            }
+        }
+    }
+
+    if (!expect(stream, '}', "expected `}`", NULL, false)) {
+        free_block(*block);
+        return PARSE_BAD;
+    }
+
+    return PARSE_OK;
+}
+
+pres_t parse_stmt(const char** stream, stmt_t* stmt) {
+    Token t = read_token(*stream);
+    *stream = t.end;
+
+    switch (t.type) {
+        case TOKEN_ERROR: {
+            fputs("Syntax error: invalid token.\n", stderr);
+            return PARSE_BAD;
+        }
+        // EOF
+        case 0: {
+            return PARSE_OK_NOTHING;
+        }
+        case TOKEN_RETURN: {
+            expr_t expr;
+            if (parse_expr(stream, &expr) != PARSE_OK) {
+                return PARSE_BAD;
+            }
+            if (!expect(stream, ';', "expected `;`", NULL, false)) {
+                free_expr(expr);
+                return PARSE_BAD;
+            }
+            *stmt = mk_do(expr);
+            break;
+        }
+        case TOKEN_DO: {
+            expr_t expr;
+            if (parse_expr(stream, &expr) != PARSE_OK) {
+                return PARSE_BAD;
+            }
+            if (!expect(stream, ';', "expected `;`", NULL, false)) {
+                free_expr(expr);
+                return PARSE_BAD;
+            }
+            *stmt = mk_do(expr);
+            break;
+        }
+        case TOKEN_LET: {
+            Token ident;
+            expr_t value;
+            if (!expect(stream, TOKEN_IDENTIFIER, "expected ident", &ident, false) ||
+                !expect(stream, '=', "expected `=`", NULL, false) ||
+                parse_expr(stream, &value) != PARSE_OK) {
+                    return PARSE_BAD;
+            }
+            if (!expect(stream, ';', "expected `;`", NULL, false)) {
+                free_expr(value);
+                return PARSE_BAD;
+            }
+            *stmt = mk_declare_var(mk_string_2ptrs(ident.start, ident.end), value);
+            break;
+        }
+        case TOKEN_WHILE: {
+            expr_t cond;
+            block_t block;
+            if (!expect(stream, '(', "expected `(`", NULL, false) ||
+                parse_expr(stream, &cond) != PARSE_OK) {
+                return PARSE_BAD;
+            }
+            if (!expect(stream, ')', "expected `)`", NULL, false) ||
+                parse_block(stream, &block) != PARSE_OK) {
+                free_expr(cond);
+                return PARSE_BAD;
+            }
+            *stmt = mk_while(cond, block);
+            return PARSE_OK;
+        }
+        default: {
+            fputs("Syntax error: expected `if`, `while`, `return`, `let`, `set`, or `do`.\n", stderr);
+            return PARSE_BAD;
+        }
+    }
+
+
+    return PARSE_OK;
+}
+
+pres_t parse_expr(const char** stream, expr_t* expr) {
+    *expr = mk_null();
     return PARSE_OK;
 }

@@ -11,3 +11,6 @@ typedef enum {
 
 pres_t parse_program(const char** stream, program_t* program);
 pres_t parse_decl(const char** stream, decl_t* decl);
+pres_t parse_block(const char** stream, block_t* block);
+pres_t parse_stmt(const char** stream, stmt_t* stmt);
+pres_t parse_expr(const char** stream, expr_t* expr);

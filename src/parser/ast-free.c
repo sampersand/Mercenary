@@ -59,10 +59,10 @@ void free_if_stmt(ast_visitor_t* visitor, if_stmt_t* stmt) {
 }
 
 void free_assign_var(ast_visitor_t* visitor, assign_var_t* stmt) {
-    for (int i = 0; i < arr_get_size(stmt->indexes); i++) {
-        visitor->visit_expr(visitor, &arr_at(stmt->indexes, i));
+    for (int i = 0; i < arr_get_size(stmt->indices); i++) {
+        visitor->visit_expr(visitor, &arr_at(stmt->indices, i));
     }
-    arr_free(stmt->indexes);
+    arr_free(stmt->indices);
     visitor->visit_expr(visitor, stmt->value);
 }
 
@@ -83,4 +83,14 @@ ast_visitor_t free_visitor() {
 void free_program(program_t program) {
     ast_visitor_t visitor = free_visitor();
     visitor.visit_program(&visitor, &program);
+}
+
+void free_block(block_t block) {
+    ast_visitor_t visitor = free_visitor();
+    visitor.visit_block(&visitor, &block);
+}
+
+void free_expr(expr_t expr) {
+    ast_visitor_t visitor = free_visitor();
+    visitor.visit_expr(&visitor, &expr);
 }

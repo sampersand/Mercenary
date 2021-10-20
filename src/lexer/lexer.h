@@ -30,7 +30,8 @@ enum {
     TOKEN_TRUE = 308,
     TOKEN_FALSE = 309,
     TOKEN_IMPORT = 310,
-    TOKEN_NULL = 311
+    TOKEN_NULL = 311,
+    TOKEN_SET = 312
 };
 
 #ifdef _WIN32

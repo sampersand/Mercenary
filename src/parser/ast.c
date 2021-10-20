@@ -167,7 +167,7 @@ stmt_t mk_assign_var(string_t ident, expr_array_t indexes, expr_t value) {
         .kind = STMT_ASSIGN_VAR,
         .value.assign_var = (assign_var_t) {
             .ident = ident,
-            .indexes = indexes,
+            .indices = indexes,
             .value = box_expr(value)
         }
     };

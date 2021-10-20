@@ -24,6 +24,7 @@ global read_token_unix
 %define TOKEN_FALSE 309
 %define TOKEN_IMPORT 310
 %define TOKEN_NULL 311
+%define TOKEN_SET 312
 
 ; typedef struct Token {
 ;    const char* start;
@@ -313,6 +314,11 @@ read_ident:
 	mov r10d, 0x74656C ; let
 	cmp r11d, r10d
 	mov r10d, TOKEN_LET
+	cmove rax, r10
+
+	mov r10d, 0x746573 ; set
+	cmp r11d, r10d
+	mov r10d, TOKEN_SET
 	cmove rax, r10
 	jmp .default_ident
 .ident_length4:

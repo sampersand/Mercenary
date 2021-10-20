@@ -6,12 +6,12 @@ LDFLAGS += -no-pie
 # (I don't know how to do conditionals like this in GNU Make, sorry)
 NASM_FORMAT ?= elf64
 
-ifeq ($(ENABLE_ASAN),1)
+ifeq ($(ASAN),1)
 	LDFLAGS += -fsanitize=address
 	CFLAGS += -fsanitize=address
 endif
 
-ifeq ($(ENABLE_UBSAN),1)
+ifeq ($(UBSAN),1)
 	LDFLAGS += -fsanitize=undefined
 	CFLAGS += -fsanitize=undefined
 endif

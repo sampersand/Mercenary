@@ -133,7 +133,7 @@ typedef struct {
 
 typedef struct {
     string_t ident;
-    expr_array_t indexes;
+    expr_array_t indices;
     expr_t* value;
 } assign_var_t;
 
@@ -238,5 +238,12 @@ decl_t mk_fn_decl(string_t name, string_array_t args, block_t block);
 decl_t mk_global(string_t ident);
 decl_t mk_import(string_t string);
 
-// Free a program.
+// Free a program. Only use if you want to free the entire AST,
+// as this will do so.
 void free_program(program_t program);
+
+// Free a block.
+void free_block(block_t block);
+
+// Free an expression
+void free_expr(expr_t expr);

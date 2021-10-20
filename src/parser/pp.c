@@ -111,7 +111,7 @@ void pp_do_stmt(ast_visitor_t* visitor, expr_t* expr) {
 }
 
 void pp_declare_var(ast_visitor_t* visitor, declare_var_t* stmt) {
-    printf("(declare-var ");
+    printf("(decl-var ");
     print_string(stmt->ident);
     printf(" (expr ");
     visitor->visit_expr(visitor, stmt->value);
@@ -119,13 +119,13 @@ void pp_declare_var(ast_visitor_t* visitor, declare_var_t* stmt) {
 }
 
 void pp_assign_var(ast_visitor_t* visitor, assign_var_t* stmt) {
-    printf("(assign-var ");
+    printf("(assign ");
     print_string(stmt->ident);
-    if (arr_get_size(stmt->indexes) > 0) {
+    if (arr_get_size(stmt->indices) > 0) {
         printf(" (indices");
-        for (int i = 0; i < arr_get_size(stmt->indexes); i++) {
+        for (int i = 0; i < arr_get_size(stmt->indices); i++) {
             printf(" (expr ");
-            visitor->visit_expr(visitor, &arr_at(stmt->indexes, i));
+            visitor->visit_expr(visitor, &arr_at(stmt->indices, i));
             printf(")");
         }
         printf(") ");
@@ -195,6 +195,10 @@ void pp_bool_expr(ast_visitor_t* visitor, bool* expr) {
     printf("%s", expr ? "true" : "false");
 }
 
+void pp_null_expr(ast_visitor_t* visitor) {
+    printf("null");
+}
+
 void pp_number_expr(ast_visitor_t* visitor, uint64_t* expr) {
     printf("%lu", *expr);
 }
@@ -243,6 +247,7 @@ ast_visitor_t pp_visitor() {
     visitor.visit_call_expr = pp_call_expr;
     visitor.visit_index_expr = pp_index_expr;
     visitor.visit_bool_expr = pp_bool_expr;
+    visitor.visit_null_expr = pp_null_expr;
     visitor.visit_number_expr = pp_number_expr;
     visitor.visit_string_expr = pp_string_expr;
     visitor.visit_ident_expr = pp_ident_expr;
