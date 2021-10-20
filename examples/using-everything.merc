@@ -60,6 +60,8 @@ function strings() {
 	/* indexing into strings */
 	do assert("abc"[1] == 'b');
 	do assert("foobar"[0] == 'f');
+	do assert(substr("foobar", 1, 3) == "oob");
+	do assert(substr("twas brillig in the slithy tothe", 5, 7) = "brillig");
 
 	/* strings operations */
 	do assert(("foo" + "bar") == "foobar"); /* concat */
@@ -71,17 +73,25 @@ function arrays() {
 	let empty = [];
 	let constructed = ['a', true, 9];
 
+	/* length */
 	do assert(length(empty) == 0);
 	do assert(length(constructed) == 3);
 
-	let constructed[0] = 'b';
+	/* indexing */
+	do assert(constructed[0] == 'a');
+	set constructed[0] = 'b'; /* `set` is used for assigning arrays */
 	do assert(constructed == ['b', true, 9]);
 
+	/* functions */
 	do insert(constructed, 1, [1,2]);
 	do assert(constructed == ['b', [1, 2], true, 9]);
 
 	do delete(constructed, 2);
 	do assert(constructed == ['b', [1, 2], 9]);
+
+	/* operators */
+	do assert(([1,2,3] + [4,5,6]) == [1,2,3,4,5,6]);
+	do assert(([1,2,3] * 3) == [1,2,3,1,2,3,1,2,3]);
 }
 
 function statements() {
@@ -94,8 +104,8 @@ function statements() {
 	let i = 0;
 	let sum = 0;
 	while (i <= 10) {
-		let i = i + 1;
-		let sum = sum + i;
+		set i = i + 1;
+		set sum = sum + i;
 	}
 	do assert(sum == 55);
 
@@ -151,10 +161,10 @@ function remaining_builtins() {
 }
 
 global global_variable; /* has no constructor */
-function set_global(value) { global global_variable = value; }
+function set_global(value) { set global_variable = value; }
 function get_global() { return global_variable; }
 function globals() {
-	do assert(global_variable == null); /* starts out as null */
+	do assert(get_global() == null); /* starts out as null */
 	do set_global(23);
 	do assert(get_global() == 23);
 }

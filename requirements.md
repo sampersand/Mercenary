@@ -28,7 +28,12 @@ Example: given `a=[true, "yup"]`, running `insert(a,2,"foo")` will cause `a` to 
 ## `delete(ary, idx)`
 Deletes the element at the given index of the array, returning it.
 
-Example: given `a=[true, "yup"]`, running `delete(a, 1)` should return `"yup"` and cause `a` to be `[true]`.
+Example: given `let a=[true, "yup"]`, running `delete(a, 1)` should return `"yup"` and cause `a` to be `[true]`.
+
+## `substr(string, start, length)`
+Returns a substring of `string` starting at `start` and is `length` characters long.
+
+Example: `substr("foobar", 1, 3)` is `"oob"`
 
 ## `print(str)`
 Prints `str` to stdout.

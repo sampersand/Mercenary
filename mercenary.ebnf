@@ -36,9 +36,9 @@ if-statement :=
   ;
 while-statement := 'while' '(' <expression> ')' <brace-statements> ;
 return-statement := 'return' [<expression>] ';' ;
-assignment (* `global` is used when assigning to global variables *)
- := ('let' | 'global') <identifier> '=' <expression> ';' (* normal assignment *)
-  | ('let' | 'global') <primary> '[' <expression> ']' '=' <expression> ';' (* array assignment *)
+assignment (* `set` is used when updating variables *)
+ := 'let' <identifier> '=' <expression> ';' (* normal assignment *)
+  | 'set' <identifier> { '[' <expression> ']' } '=' <expression> ';' (* array assignment or updating values *)
   ;
 
 (* No order of operations lol *)

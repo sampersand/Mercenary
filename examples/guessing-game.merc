@@ -1,3 +1,5 @@
+global scret;
+1
 function guess() {
 	do print("> "); /* should flush stdout */
 	let guess = atoi(prompt());
@@ -13,17 +15,18 @@ function guess() {
 
 function main(argv) {
 	let max = 100;
+
 	if (length(argv) != 1) {
-		let max = atoi(argv[1]);
+		set max = atoi(argv[1]);
 	}
-	global secret = random() % max;
+	set secret = random() % max;
 
 	do print("Guessing game! Guess from 1-" + itoa(max) + "\n");
 
 	let guesses = 0;
 
 	while (!guess()) {
-		let guesses = guesses + 1;
+		set guesses = guesses + 1;
 	}
 
 	do print("It took you " + itoa(guesses) + " guesses!\n");
