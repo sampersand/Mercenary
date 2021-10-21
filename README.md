@@ -7,7 +7,10 @@ People are not allowed to modify previous people's code, and they are encouraged
 ## Contributors
 The following lovely people contributed to the original project:
 
-- Lexer (Assembly): TBD
-- AST Generation (C): TBD
-- Codegen (C++): TBD
-- Runtime (RUST): TBD
+- Lexer (Assembly): [ReNegate](https://github.com/RealNeGate)
+- AST Generation (C): [Paradoxical](https://github.com/ThePuzzlemaker/)
+- Codegen (C++): [RazzBerry](??)
+- Runtime (RUST): [easyaspi314](https://github.com/easyaspi314)
+- REPL (TBD): TBD
+- Bytecode Optimizations (TBD): TBD
+- <others?>
