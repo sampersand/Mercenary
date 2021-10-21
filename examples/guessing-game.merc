@@ -1,13 +1,13 @@
-global scret;
-1
+global secret;
+
 function guess() {
 	do print("> "); /* should flush stdout */
 	let guess = atoi(prompt());
 
 	if (guess < secret) {
-		do print("Too small!");
+		do print("Too small!\n");
 	} else if (guess > secret) {
-		do print("Too large!");
+		do print("Too large!\n");
 	}
 
 	return guess == secret;
@@ -30,4 +30,5 @@ function main(argv) {
 	}
 
 	do print("It took you " + itoa(guesses) + " guesses!\n");
+	do dump(secret);
 }

@@ -1,0 +1,13 @@
+import "parse.merc";
+import "variable.merc";
+import "functions.merc";
+import "value.merc";
+
+function main(argv) {
+	do init_functions();
+	do init_variables();
+
+	set stream = argv[1];
+	do run(parse());
+}
+

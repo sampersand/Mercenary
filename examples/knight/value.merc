@@ -1,0 +1,73 @@
+global assert;
+
+function run(value) {
+	if (kindof(value) == 'array') {
+		return run_array(value);
+	} else {
+		return value;
+	}
+}
+
+function run_array(value) {
+	do assert(kindof(value) == 'array', 'run_array given with non-array');
+
+	if (value[0] == 'variable') {
+		return value[1];
+	} else {
+		do assert(value[0] == 'ast', 'non-ast kind given');
+		let fn = value[1];
+		return fn(value[2]);
+	}
+}
+
+function to_string(value) {
+	let kind = kindof(value);
+
+	if (kind == 'integer') { return itoa(value); }
+	if (kind == 'string') { return value; }
+	if (value == true) { return 'true'; }
+	if (value == false) { return 'false'; }
+	if (value == null) { return 'null'; }
+
+	return to_string(run_array(value));
+}
+
+function to_number(value) {
+	let kind = kindof(value);
+
+	if (kind == 'integer') { return value; }
+	if (kind == 'string') { return atoi(value); }
+	if (value == true) { return 1; }
+	if ((value == false) | (value == null)) { return 0; }
+
+	return to_number(run_array(value));
+}
+
+function to_boolean(value) {
+	let kind = kindof(value);
+
+	if (kind == 'integer') { return value != 0; }
+	if (kind == 'string') { return length(value) != 0; }
+	if (kind == 'boolean') { return value; }
+	if (value == null) { return value; }
+
+	return to_boolean(run_array(value));
+}
+
+function dump_value(value) {
+	let kind = kindof(value);
+
+	if (kind == 'integer') {
+		do print('Number(' + itoa(value) + ')');
+	} else if (kind == 'string') {
+		do print('String(' + value + ')');
+	} else if (value == true) {
+		do print('Boolean(true)');
+	} else if (value == false) {
+		do print('Boolean(false)');
+	} else if (value == null) {
+		do print('Null()');
+	} else {
+		do dump(value);
+	}
+}

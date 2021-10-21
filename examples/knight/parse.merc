@@ -1,0 +1,162 @@
+import "./utils.merc";
+
+global stream;
+
+global lookup_func;
+global lookup_variable;
+
+function peek() {
+	if (length(stream) == 0) {
+		return '';
+	} else {
+		return stream[0];
+	}
+}
+
+function advance() {
+	if (length(stream) != 0) {
+		set stream = substr(stream, 1, length(stream) - 1);
+	}
+}
+
+function isdigit(chr) {
+	return ('0' <= chr) & (chr <= '9');
+}
+
+function islower(chr) {
+	return (('a' <= chr) & (chr <= 'z')) | (chr == '_');
+}
+
+function isupper(chr) {
+	return ('A' <= chr) & (chr <= 'Z');
+}
+
+function isspace(chr) {
+	return string_contains(" \n\t\r\f{}()[]:", chr);
+}
+
+function strip_whitespace_and_comments() {
+	while (true) {
+		let chr = peek();
+
+		if (isspace(chr)) {
+			do advance();
+		} else if (chr == '#') {
+			let cont = true;
+			while (cont) {
+				let chr = peek();
+				set cont = (chr == "") | (chr == "\n");
+				do advance();
+			}
+		} else {
+			return;
+		}
+	}
+}
+
+function parse_number() {
+	let num = 0;
+
+	while (true) {
+		let chr = peek();
+		
+		if (!isdigit(chr)) {
+			return num;
+		}
+
+		set num = (num * 10) + atoi(chr);
+		do advance();
+	}
+}
+
+function parse_identifier() {
+	let ident = '';
+
+	while (true) {
+		let chr = peek();
+
+		if (!islower(chr) & !isdigit(chr)) {
+			return lookup_variable(ident);
+		}
+
+		set ident = ident + chr;
+		do advance();
+	}
+}
+
+function parse_string() {
+	let quote = peek();
+	let body = "";
+	do advance();
+
+	while (true) {
+		let chr = peek();
+		do advance();
+
+		if (chr == quote) {
+			return body;
+		}
+
+		set body = body + chr;
+	}
+}
+
+function parse() {
+	do strip_whitespace_and_comments();
+
+	if (length(stream) == 0) {
+		return null;
+	}
+
+	let chr = peek();
+
+	/* Parse Literals */
+	if (isdigit(chr)) {
+		return parse_number();
+	}
+
+	if (islower(chr)) {
+		return parse_identifier();
+	}
+
+	if ((chr == "'") | (chr == '"')) {
+		return parse_string();
+	}
+
+	/* Strip keyword prefixes */
+	while (isupper(peek()) | (peek() == '_')) {
+		do advance();
+	}
+
+	if (!isupper(chr)) {
+		do advance();
+	}
+
+	/* Parse Constants */
+	if ((chr == 'T') | (chr == 'F')) {
+		return chr == 'T';
+	}
+
+	if (chr == 'N') {
+		return null;
+	}
+
+	/* Parse AST */
+	let tmp = lookup_func(chr);
+	if (tmp == null) {
+		do abort("Syntax Error: unknown function '" + chr + "'");
+	}
+
+	let args = [null, null, null, null];
+	let i = 0;
+
+	while (i < tmp[0]) {
+		set args[i] = parse();
+		set i = i + 1;
+		if (args[i - 1] == null) {
+			do abort("Syntax error: Missing argument " + itoa(i) + " for function '" + chr + "'");
+		}
+	}
+
+	return ['ast', tmp[1], args];
+}
