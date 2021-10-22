@@ -252,6 +252,135 @@ pres_t parse_stmt(const char** stream, stmt_t* stmt) {
             *stmt = mk_while(cond, block);
             return PARSE_OK;
         }
+        case TOKEN_IF: {
+            expr_t main_cond;
+            block_t main_block;
+            expr_array_t elif_conds;
+            arr_alloc(elif_conds);
+            block_array_t elif_blocks;
+            arr_alloc(elif_blocks);
+            block_t else_block = NULL;
+
+            if (!expect(stream, '(', "expected `(`", NULL, false) ||
+                parse_expr(stream, &main_cond) != PARSE_OK) {
+                arr_free(elif_conds);
+                arr_free(elif_blocks);
+                return PARSE_BAD;
+            }
+            if (!expect(stream, ')', "expected `)`", NULL, false) ||
+                parse_block(stream, &main_block) != PARSE_OK) {
+                free_expr(main_cond);
+                arr_free(elif_conds);
+                arr_free(elif_blocks);
+                return PARSE_BAD;
+            }
+
+            bool cont = true;
+            while (cont) {
+                Token peek = read_token(*stream);
+                switch (peek.type) {
+                    case TOKEN_ERROR: {
+                        fputs("Syntax error: invalid token.\n", stderr);
+                        free_expr(main_cond);
+                        free_block(main_block);
+                        return PARSE_BAD;
+                    }
+                    // EOF
+                    case 0: {
+                        cont = false;
+                        break;
+                    }
+                    case TOKEN_ELSE: {
+                        *stream = peek.end;
+                        Token peek1 = read_token(*stream);
+                        switch (peek1.type) {
+                            case TOKEN_ERROR: {
+                                fputs("Syntax error: invalid token.\n", stderr);
+                                free_expr(main_cond);
+                                free_block(main_block);
+                                for (int i = 0; i < arr_get_size(elif_conds); i++) {
+                                    free_expr(arr_at(elif_conds, i));
+                                    free_block(arr_at(elif_blocks, i));
+                                }
+                                arr_free(elif_conds);
+                                arr_free(elif_blocks);
+                                return PARSE_BAD;
+                            }
+                            // EOF
+                            case 0: {
+                                fputs("Syntax error: expected `if` or `{`.\n", stderr);
+                                free_expr(main_cond);
+                                free_block(main_block);
+                                for (int i = 0; i < arr_get_size(elif_conds); i++) {
+                                    free_expr(arr_at(elif_conds, i));
+                                    free_block(arr_at(elif_blocks, i));
+                                }
+                                arr_free(elif_conds);
+                                arr_free(elif_blocks);
+                                return PARSE_BAD;
+                            }
+                            case TOKEN_IF: {
+                                *stream = peek1.end;
+                                expr_t cond;
+                                block_t block;
+                                if (!expect(stream, '(', "expected `(`", NULL, false) ||
+                                    parse_expr(stream, &cond) != PARSE_OK) {
+                                    free_expr(main_cond);
+                                    free_block(main_block);
+                                    for (int i = 0; i < arr_get_size(elif_conds); i++) {
+                                        free_expr(arr_at(elif_conds, i));
+                                        free_block(arr_at(elif_blocks, i));
+                                    }
+                                    arr_free(elif_conds);
+                                    arr_free(elif_blocks);
+                                    return PARSE_BAD;
+                                }
+                                if (!expect(stream, ')', "expected `)`", NULL, false) ||
+                                    parse_block(stream, &block) != PARSE_OK) {
+                                    free_expr(main_cond);
+                                    free_block(main_block);
+                                    for (int i = 0; i < arr_get_size(elif_conds); i++) {
+                                        free_expr(arr_at(elif_conds, i));
+                                        free_block(arr_at(elif_blocks, i));
+                                    }
+                                    free_expr(cond);
+                                    arr_free(elif_conds);
+                                    arr_free(elif_blocks);
+                                    return PARSE_BAD;
+                                }
+                                arr_append(elif_conds) = cond;
+                                // NOLINTNEXTLINE(bugprone-sizeof-expression)
+                                arr_append(elif_blocks) = block;
+                                break;
+                            }
+                            default: {
+                                if (parse_block(stream, &else_block) != PARSE_OK) {
+                                    free_expr(main_cond);
+                                    free_block(main_block);
+                                    for (int i = 0; i < arr_get_size(elif_conds); i++) {
+                                        free_expr(arr_at(elif_conds, i));
+                                        free_block(arr_at(elif_blocks, i));
+                                    }
+                                    arr_free(elif_conds);
+                                    arr_free(elif_blocks);
+                                    return PARSE_BAD;
+                                }
+                                cont = false;
+                                break;
+                            };
+                        }
+                        break;
+                    }
+                    default: {
+                        cont = false;
+                        break;
+                    }
+                }
+            }
+
+            *stmt = mk_if(main_cond, main_block, elif_conds, elif_blocks, else_block);
+            return PARSE_OK;
+        }
         default: {
             fputs("Syntax error: expected `if`, `while`, `return`, `let`, `set`, or `do`.\n", stderr);
             return PARSE_BAD;

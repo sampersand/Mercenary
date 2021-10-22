@@ -84,7 +84,7 @@ void pp_if_stmt(ast_visitor_t* visitor, if_stmt_t* stmt) {
     }
     if (stmt->else_block != NULL) {
         printf(" (else ");
-        visitor->visit_block(visitor, stmt->else_block);
+        visitor->visit_block(visitor, &stmt->else_block);
         printf(")");
     }
     printf(")");

@@ -1,5 +1,11 @@
 function foo() {
-    while () {
-
+    if () {
+        let a = ;
+    } else if () {
+        let b = ;
+    } else if () {
+        let c = ;
+    } else {
+        let d = ;
     }
 }

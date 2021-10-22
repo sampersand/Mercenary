@@ -97,6 +97,7 @@ struct expr {
         // EXPR_ARRAY
         expr_array_t array;
     } value;
+    bool boxed;
 };
 
 arr_decl(expr_array_t, expr_t)
@@ -118,7 +119,7 @@ typedef struct {
     // block_t[elif_len]
     block_array_t elif_blocks;
     // nullable.
-    block_t* else_block;
+    block_t else_block;
 } if_stmt_t;
 
 typedef struct {
@@ -221,7 +222,7 @@ stmt_t mk_if(
     // block_t[elif_len]
     block_array_t elif_blocks,
     // nullable.
-    block_t* else_block
+    block_t else_block
 );
 stmt_t mk_while(expr_t cond, block_t block);
 stmt_t mk_return(expr_t expr);

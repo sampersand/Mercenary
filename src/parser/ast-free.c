@@ -2,15 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ast-visit.h"
-
-// #define PLURAL_WRAPPER(singular, plural) \
-//     void free_##plural(uint32_t len, singular##_t** plural) { \
-//         for (int i = 0; i < len; i++) { \
-//             free_##singular(plural[i]); \
-//         } \
-//         free(plural); \
-//     }
-
 void free_fn_decl(ast_visitor_t* visitor, fn_decl_t* decl) {
     arr_free(decl->args);
     visitor->visit_block(visitor, &decl->block);
@@ -25,7 +16,9 @@ void free_block_post(ast_visitor_t* visitor, block_t* block) {
 }
 
 void free_expr_post(ast_visitor_t* visitor, expr_t* expr) {
-    free(expr);
+    if (expr->boxed) {
+        free(expr);
+    }
 }
 
 void free_call_expr(ast_visitor_t* visitor, call_expr_t* expr) {
@@ -53,8 +46,7 @@ void free_if_stmt(ast_visitor_t* visitor, if_stmt_t* stmt) {
     arr_free(stmt->elif_conds);
     arr_free(stmt->elif_blocks);
     if (stmt->else_block != NULL) {
-        visitor->visit_block(visitor, stmt->else_block);
-        free(stmt->else_block);
+        visitor->visit_block(visitor, &stmt->else_block);
     }
 }
 

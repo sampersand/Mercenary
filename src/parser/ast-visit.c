@@ -85,7 +85,7 @@ void walk_if_stmt(ast_visitor_t* visitor, if_stmt_t* stmt) {
         visitor->visit_block(visitor, &arr_at(stmt->elif_blocks, i));
     }
     if (stmt->else_block != NULL) {
-        visitor->visit_block(visitor, stmt->else_block);
+        visitor->visit_block(visitor, &stmt->else_block);
     }
 }
 void walk_while_stmt(ast_visitor_t* visitor, while_stmt_t* stmt) {

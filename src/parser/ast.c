@@ -29,6 +29,7 @@ string_t mk_string_2ptrs(const char* start, const char* end) {
 expr_t* box_expr(expr_t expr) {
     expr_t* new_expr = (expr_t*) malloc(sizeof(expr_t));
     *new_expr = expr;
+    new_expr->boxed = true;
     return new_expr;
 }
 
@@ -39,7 +40,8 @@ expr_t mk_binop(expr_t lhs, expr_t rhs, binop_t op) {
             .lhs = box_expr(lhs),
             .rhs = box_expr(rhs),
             .op = op
-        }
+        },
+        .boxed = false
     };
 }
 
@@ -49,7 +51,8 @@ expr_t mk_unop(expr_t subexpr, unop_t op) {
         .value.unary = (unop_expr_t) {
             .subexpr = box_expr(subexpr),
             .op = op
-        }
+        },
+        .boxed = false
     };
 }
 
@@ -59,7 +62,8 @@ expr_t mk_call(expr_t func, expr_array_t args) {
         .value.call = (call_expr_t) {
             .func = box_expr(func),
             .args = args,
-        }
+        },
+        .boxed = false
     };
 }
 
@@ -69,7 +73,8 @@ expr_t mk_index(expr_t array, expr_t index) {
         .value.index = (index_expr_t) {
             .array = box_expr(array),
             .index = box_expr(index)
-        }
+        },
+        .boxed = false
     };
 }
 
@@ -77,6 +82,7 @@ expr_t mk_array(expr_array_t exprs) {
     return (expr_t) {
         .kind = EXPR_ARRAY,
         .value.array = exprs,
+        .boxed = false
     };
 }
 
@@ -84,34 +90,39 @@ expr_t mk_bool(bool val) {
     return (expr_t) {
         .kind = EXPR_BOOL,
         .value.bool_expr = val,
+        .boxed = false
     };
 }
 
 expr_t mk_number(uint64_t number) {
     return (expr_t) {
         .kind = EXPR_NUMBER,
-        .value.number = number
+        .value.number = number,
+        .boxed = false
     };
 }
 
 expr_t mk_null() {
     return (expr_t) {
         .kind = EXPR_NULL,
-        .value = 0
+        .value = 0,
+        .boxed = false
     };
 }
 
 expr_t mk_string_expr(string_t string) {
     return (expr_t) {
         .kind = EXPR_STRING,
-        .value.string = string
+        .value.string = string,
+        .boxed = false
     };
 }
 
 expr_t mk_ident(string_t ident) {
     return (expr_t) {
         .kind = EXPR_IDENT,
-        .value.string = ident
+        .value.string = ident,
+        .boxed = false
     };
 }
 
@@ -120,7 +131,7 @@ stmt_t mk_if(
     block_t main_block,
     expr_array_t elif_conds,
     block_array_t elif_blocks,
-    block_t* else_block
+    block_t else_block
 ) {
     assert((arr_get_size(elif_conds) == arr_get_size(elif_blocks)));
     return (stmt_t) {
