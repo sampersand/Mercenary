@@ -1,7 +1,8 @@
 #pragma once
 
-#include "ast.h"
 #include <stdlib.h>
+
+#include "ast.h"
 
 #define FN(ident, args) void (*ident)(ast_visitor_t*, args)
 #define FN_(ident) void (*ident)(ast_visitor_t*)
@@ -10,46 +11,46 @@ struct ast_visitor;
 typedef struct ast_visitor ast_visitor_t;
 
 struct ast_visitor {
-    void* data;
+  void* data;
 
-    FN(visit_binop_expr, binop_expr_t*);
-    FN(visit_unop_expr, unop_expr_t*);
-    FN(visit_call_expr, call_expr_t*);
-    FN(visit_index_expr, index_expr_t*);
-    FN(visit_bool_expr, bool*);
-    FN(visit_number_expr, uint64_t*);
-    FN(visit_string_expr, string_t*);
-    FN(visit_ident_expr, string_t*);
-    FN(visit_array_expr, expr_array_t*);
-    FN_(visit_null_expr);
-    FN(visit_expr, expr_t*);
-    FN(visit_expr_pre, expr_t*);
-    FN(visit_expr_post, expr_t*);
+  FN(visit_binop_expr, binop_expr_t*);
+  FN(visit_unop_expr, unop_expr_t*);
+  FN(visit_call_expr, call_expr_t*);
+  FN(visit_index_expr, index_expr_t*);
+  FN(visit_bool_expr, bool*);
+  FN(visit_number_expr, uint64_t*);
+  FN(visit_string_expr, string_t*);
+  FN(visit_ident_expr, string_t*);
+  FN(visit_array_expr, expr_array_t*);
+  FN_(visit_null_expr);
+  FN(visit_expr, expr_t*);
+  FN(visit_expr_pre, expr_t*);
+  FN(visit_expr_post, expr_t*);
 
-    FN(visit_if_stmt, if_stmt_t*);
-    FN(visit_while_stmt, while_stmt_t*);
-    FN(visit_return_stmt, expr_t*);
-    FN(visit_do_stmt, expr_t*);
-    FN(visit_declare_var, declare_var_t*);
-    FN(visit_assign_var, assign_var_t*);
-    FN(visit_stmt, stmt_t*);
-    FN(visit_stmt_pre, stmt_t*);
-    FN(visit_stmt_post, stmt_t*);
+  FN(visit_if_stmt, if_stmt_t*);
+  FN(visit_while_stmt, while_stmt_t*);
+  FN(visit_return_stmt, expr_t*);
+  FN(visit_do_stmt, expr_t*);
+  FN(visit_declare_var, declare_var_t*);
+  FN(visit_assign_var, assign_var_t*);
+  FN(visit_stmt, stmt_t*);
+  FN(visit_stmt_pre, stmt_t*);
+  FN(visit_stmt_post, stmt_t*);
 
-    FN(visit_block, block_t*);
-    FN(visit_block_pre, block_t*);
-    FN(visit_block_post, block_t*);
+  FN(visit_block, block_t*);
+  FN(visit_block_pre, block_t*);
+  FN(visit_block_post, block_t*);
 
-    FN(visit_fn_decl, fn_decl_t*);
-    FN(visit_global_decl, string_t*);
-    FN(visit_import_decl, string_t*);
-    FN(visit_decl, decl_t*);
-    FN(visit_decl_pre, decl_t*);
-    FN(visit_decl_post, decl_t*);
+  FN(visit_fn_decl, fn_decl_t*);
+  FN(visit_global_decl, string_t*);
+  FN(visit_import_decl, string_t*);
+  FN(visit_decl, decl_t*);
+  FN(visit_decl_pre, decl_t*);
+  FN(visit_decl_post, decl_t*);
 
-    FN(visit_program, program_t*);
-    FN(visit_program_pre, program_t*);
-    FN(visit_program_post, program_t*);
+  FN(visit_program, program_t*);
+  FN(visit_program_pre, program_t*);
+  FN(visit_program_post, program_t*);
 };
 
 void walk_binop_expr(ast_visitor_t* visitor, binop_expr_t* expr);
@@ -131,5 +132,4 @@ static ast_visitor_t DEFAULT_VISITOR = {
 
     .visit_program = walk_program,
     .visit_program_pre = walk_program_pre,
-    .visit_program_post = walk_program_post
-};
+    .visit_program_post = walk_program_post};

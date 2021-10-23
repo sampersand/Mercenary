@@ -4,18 +4,17 @@
 #include "ast.h"
 
 typedef enum {
-    PARSE_BAD = 0,
-    PARSE_OK = 1,
-    PARSE_OK_NOTHING,
+  PARSE_BAD = 0,
+  PARSE_OK = 1,
+  PARSE_OK_NOTHING,
 } pres_t;
 
-arr_forward_decl(uint32_array_t)
-arr_decl(uint32_array_t, uint32_t)
+arr_forward_decl(uint32_array_t) arr_decl(uint32_array_t, uint32_t)
 
-typedef struct {
-    const char* stream_start;
-    uint32_t overall_len;
-    uint32_array_t line_offsets;
+    typedef struct {
+  const char* stream_start;
+  uint32_t overall_len;
+  uint32_array_t line_offsets;
 } eh_data_t;
 
 pres_t parse_program(const char** stream, program_t* program, eh_data_t eh);
