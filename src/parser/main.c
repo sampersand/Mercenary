@@ -56,15 +56,24 @@ int main(int argc, char** argv) {
 
     program_t program;
     
-    pres_t res = parse_program(&stream, &program);
+    uint32_t len = strlen(file);
+    eh_data_t eh = {
+        .overall_len = len,
+        .stream_start = (const char*)file,
+        .line_offsets = mk_offsets_list(file, len) 
+    };
+
+    pres_t res = parse_program(&stream, &program, eh);
     
     if (!res) {
         free(file);
+        arr_free(eh.line_offsets);
         return -1;
     }
 
     pp_program(program);
     free_program(program);
+    arr_free(eh.line_offsets);
 
     free(file);
     // while (true) {

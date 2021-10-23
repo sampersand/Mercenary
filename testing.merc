@@ -1,3 +1,0 @@
-function foo() {
-    let foo = [a == b, a != b, a > b, a >= b, a < b, a <= b, a & b, a | b, a + b, a - b, a * b, a / b, a % b];
-}

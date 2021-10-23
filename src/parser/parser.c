@@ -7,8 +7,14 @@
 
 // TODO proper error handling lmao
 
-pres_t expect(const char** stream, uint64_t type, const char* error, Token* tok) {
+void print_error(eh_data_t eh, const char* stream, const char* error) {
+    uint32_t offset = stream - eh.stream_start;
+    fprintf(stderr, "Syntax error at %d:%d: %s.\n", line_num(eh, offset) + 1, col_num(eh, offset) + 1, error);
+}
+
+pres_t expect(const char** stream, uint64_t type, const char* error, Token* tok, eh_data_t eh) {
     Token t = read_token(*stream);
+    const char* saved_stream = *stream;
     *stream = t.end;
 
     if (t.type == type) {
@@ -17,17 +23,17 @@ pres_t expect(const char** stream, uint64_t type, const char* error, Token* tok)
         }
         return PARSE_OK;
     } else {
-        fprintf(stderr, "Syntax error: %s.\n", error);
+        print_error(eh, saved_stream, error);
         return PARSE_BAD;
     }
 }
 
-pres_t parse_program(const char** stream, program_t* program) {
+pres_t parse_program(const char** stream, program_t* program, eh_data_t eh) {
     arr_alloc(*program);
 
     for (;;) {
         decl_t decl;
-        switch (parse_decl(stream, &decl)) {
+        switch (parse_decl(stream, &decl, eh)) {
             case PARSE_OK: {
                 arr_append(*program) = decl;
                 break;
@@ -43,13 +49,14 @@ pres_t parse_program(const char** stream, program_t* program) {
     return PARSE_OK;
 }
 
-pres_t parse_decl(const char** stream, decl_t* decl) {
+pres_t parse_decl(const char** stream, decl_t* decl, eh_data_t eh) {
     Token t = read_token(*stream);
+    const char* saved_stream = *stream;
     *stream = t.end;
 
     switch (t.type) {
         case TOKEN_ERROR: {
-            fputs("Syntax error: invalid token.\n", stderr);
+            print_error(eh, saved_stream, "invalid token");
             return PARSE_BAD;
         }
         // EOF
@@ -58,8 +65,8 @@ pres_t parse_decl(const char** stream, decl_t* decl) {
         }
         case TOKEN_IMPORT: {
             Token string;
-            if (!expect(stream, TOKEN_STRING, "expected string", &string) ||
-                !expect(stream, ';', "expected semicolon", NULL)) {
+            if (!expect(stream, TOKEN_STRING, "expected string", &string, eh) ||
+                !expect(stream, ';', "expected `;`", NULL, eh)) {
                 return PARSE_BAD;
             }
             *decl = mk_import(mk_string_2ptrs(string.start, string.end));
@@ -67,8 +74,8 @@ pres_t parse_decl(const char** stream, decl_t* decl) {
         }
         case TOKEN_GLOBAL: {
             Token ident;
-            if (!expect(stream, TOKEN_IDENTIFIER, "expected identifier", &ident) ||
-                !expect(stream, ';', "expected semicolon", NULL)) {
+            if (!expect(stream, TOKEN_IDENTIFIER, "expected identifier", &ident, eh) ||
+                !expect(stream, ';', "expected `;`", NULL, eh)) {
                 return PARSE_BAD;
             }
             *decl = mk_global(mk_string_2ptrs(ident.start, ident.end));
@@ -76,8 +83,8 @@ pres_t parse_decl(const char** stream, decl_t* decl) {
         }
         case TOKEN_FUNCTION: {
             Token name;
-            if (!expect(stream, TOKEN_IDENTIFIER, "expected identifier", &name) ||
-                !expect(stream, '(', "expected opening paren", NULL)) {
+            if (!expect(stream, TOKEN_IDENTIFIER, "expected identifier", &name, eh) ||
+                !expect(stream, '(', "expected `(`", NULL, eh)) {
                 return PARSE_BAD;
             }
             
@@ -87,10 +94,11 @@ pres_t parse_decl(const char** stream, decl_t* decl) {
             bool is_first = true;
             while (!exit) {
                 Token t = read_token(*stream);
+                saved_stream = *stream;
                 *stream = t.end;
                 switch (t.type) {
                     case TOKEN_ERROR: {
-                        fputs("Syntax error: invalid token.\n", stderr);
+                        print_error(eh, saved_stream, "invalid token");
                         arr_free(args);
                         return PARSE_BAD;
                     }
@@ -98,7 +106,7 @@ pres_t parse_decl(const char** stream, decl_t* decl) {
                         if (is_first) {
                             arr_append(args) = mk_string_2ptrs(t.start, t.end);
                         } else {
-                            fputs("Syntax error: expected `)` or `,`.\n", stderr);
+                            print_error(eh, saved_stream, "expected `)` or `,`");
                             arr_free(args);
                             return PARSE_BAD;
                         }
@@ -106,7 +114,7 @@ pres_t parse_decl(const char** stream, decl_t* decl) {
                     }
                     case ',': {
                         Token ident;
-                        if (!expect(stream, TOKEN_IDENTIFIER, "expected ident", &ident)) {
+                        if (!expect(stream, TOKEN_IDENTIFIER, "expected ident", &ident, eh)) {
                             arr_free(args);
                             return PARSE_BAD;
                         }
@@ -118,7 +126,7 @@ pres_t parse_decl(const char** stream, decl_t* decl) {
                         break;
                     }
                     default: {
-                        fputs("Syntax error: expected ident or `)`.\n", stderr);
+                        print_error(eh, saved_stream, "expected ident or `)`");
                         arr_free(args);
                         return PARSE_BAD;
                     }
@@ -126,7 +134,7 @@ pres_t parse_decl(const char** stream, decl_t* decl) {
                 is_first = false;
             }
             block_t block;
-            if (!parse_block(stream, &block)) {
+            if (!parse_block(stream, &block, eh)) {
                 arr_free(args);
                 return PARSE_BAD;
             }
@@ -134,7 +142,7 @@ pres_t parse_decl(const char** stream, decl_t* decl) {
             break;
         }
         default: {
-            fputs("Syntax error: expected `import`, `global`, or `function`.\n", stderr);
+            print_error(eh, saved_stream, "expected `import`, `global`, or `function`");
             return PARSE_BAD;
         }
     }
@@ -142,10 +150,10 @@ pres_t parse_decl(const char** stream, decl_t* decl) {
     return PARSE_OK;
 }
 
-pres_t parse_block(const char** stream, block_t* block) {
+pres_t parse_block(const char** stream, block_t* block, eh_data_t eh) {
     arr_alloc(*block);
 
-    if (!expect(stream, '{', "expected `{`", NULL)) {
+    if (!expect(stream, '{', "expected `{`", NULL, eh)) {
         free_block(*block);
         return PARSE_BAD;
     }
@@ -160,7 +168,7 @@ pres_t parse_block(const char** stream, block_t* block) {
         }
 
         stmt_t stmt;
-        switch (parse_stmt(stream, &stmt)) {
+        switch (parse_stmt(stream, &stmt, eh)) {
             case PARSE_OK: {
                 arr_append(*block) = stmt;
                 break;
@@ -176,7 +184,7 @@ pres_t parse_block(const char** stream, block_t* block) {
         }
     }
 
-    if (!expect(stream, '}', "expected `}`", NULL)) {
+    if (!expect(stream, '}', "expected `}`", NULL, eh)) {
         free_block(*block);
         return PARSE_BAD;
     }
@@ -184,13 +192,14 @@ pres_t parse_block(const char** stream, block_t* block) {
     return PARSE_OK;
 }
 
-pres_t parse_stmt(const char** stream, stmt_t* stmt) {
+pres_t parse_stmt(const char** stream, stmt_t* stmt, eh_data_t eh) {
     Token t = read_token(*stream);
+    const char* saved_stream = *stream;
     *stream = t.end;
 
     switch (t.type) {
         case TOKEN_ERROR: {
-            fputs("Syntax error: invalid token.\n", stderr);
+            print_error(eh, saved_stream, "invalid token");
             return PARSE_BAD;
         }
         // EOF
@@ -199,22 +208,28 @@ pres_t parse_stmt(const char** stream, stmt_t* stmt) {
         }
         case TOKEN_RETURN: {
             expr_t expr;
-            if (parse_expr(stream, &expr) != PARSE_OK) {
-                return PARSE_BAD;
+            Token peek = read_token(*stream);
+            if (peek.type == ';') {
+                *stream = peek.end;
+                expr = mk_null();
+            } else {
+                if (parse_expr(stream, &expr, eh) != PARSE_OK) {
+                    return PARSE_BAD;
+                }
+                if (!expect(stream, ';', "expected `;`", NULL, eh)) {
+                    free_expr(expr);
+                    return PARSE_BAD;
+                }
             }
-            if (!expect(stream, ';', "expected `;`", NULL)) {
-                free_expr(expr);
-                return PARSE_BAD;
-            }
-            *stmt = mk_do(expr);
+            *stmt = mk_return(expr);
             break;
         }
         case TOKEN_DO: {
             expr_t expr;
-            if (parse_expr(stream, &expr) != PARSE_OK) {
+            if (parse_expr(stream, &expr, eh) != PARSE_OK) {
                 return PARSE_BAD;
             }
-            if (!expect(stream, ';', "expected `;`", NULL)) {
+            if (!expect(stream, ';', "expected `;`", NULL, eh)) {
                 free_expr(expr);
                 return PARSE_BAD;
             }
@@ -224,12 +239,12 @@ pres_t parse_stmt(const char** stream, stmt_t* stmt) {
         case TOKEN_LET: {
             Token ident;
             expr_t value;
-            if (!expect(stream, TOKEN_IDENTIFIER, "expected ident", &ident) ||
-                !expect(stream, '=', "expected `=`", NULL) ||
-                parse_expr(stream, &value) != PARSE_OK) {
+            if (!expect(stream, TOKEN_IDENTIFIER, "expected ident", &ident, eh) ||
+                !expect(stream, '=', "expected `=`", NULL, eh) ||
+                parse_expr(stream, &value, eh) != PARSE_OK) {
                     return PARSE_BAD;
             }
-            if (!expect(stream, ';', "expected `;`", NULL)) {
+            if (!expect(stream, ';', "expected `;`", NULL, eh)) {
                 free_expr(value);
                 return PARSE_BAD;
             }
@@ -239,12 +254,12 @@ pres_t parse_stmt(const char** stream, stmt_t* stmt) {
         case TOKEN_WHILE: {
             expr_t cond;
             block_t block;
-            if (!expect(stream, '(', "expected `(`", NULL) ||
-                parse_expr(stream, &cond) != PARSE_OK) {
+            if (!expect(stream, '(', "expected `(`", NULL, eh) ||
+                parse_expr(stream, &cond, eh) != PARSE_OK) {
                 return PARSE_BAD;
             }
-            if (!expect(stream, ')', "expected `)`", NULL) ||
-                parse_block(stream, &block) != PARSE_OK) {
+            if (!expect(stream, ')', "expected `)`", NULL, eh) ||
+                parse_block(stream, &block, eh) != PARSE_OK) {
                 free_expr(cond);
                 return PARSE_BAD;
             }
@@ -257,15 +272,16 @@ pres_t parse_stmt(const char** stream, stmt_t* stmt) {
             expr_array_t elif_conds;
             arr_alloc(elif_conds);
             block_array_t elif_blocks;
+            // NOLINTNEXTLINE bugprone-sizeof-expression
             arr_alloc(elif_blocks);
             block_t else_block = NULL;
 
-            if (!expect(stream, '(', "expected `(`", NULL) ||
-                parse_expr(stream, &main_cond) != PARSE_OK) {
+            if (!expect(stream, '(', "expected `(`", NULL, eh) ||
+                parse_expr(stream, &main_cond, eh) != PARSE_OK) {
                 goto if_cleanup;
             }
-            if (!expect(stream, ')', "expected `)`", NULL) ||
-                parse_block(stream, &main_block) != PARSE_OK) {
+            if (!expect(stream, ')', "expected `)`", NULL, eh) ||
+                parse_block(stream, &main_block, eh) != PARSE_OK) {
                 free_expr(main_cond);
                 goto if_cleanup;
             }
@@ -275,7 +291,7 @@ pres_t parse_stmt(const char** stream, stmt_t* stmt) {
                 Token peek = read_token(*stream);
                 switch (peek.type) {
                     case TOKEN_ERROR: {
-                        fputs("Syntax error: invalid token.\n", stderr);
+                        print_error(eh, *stream, "invalid token");
                         goto if_cleanup_else_loop;
                     }
                     // EOF
@@ -288,24 +304,24 @@ pres_t parse_stmt(const char** stream, stmt_t* stmt) {
                         Token peek1 = read_token(*stream);
                         switch (peek1.type) {
                             case TOKEN_ERROR: {
-                                fputs("Syntax error: invalid token.\n", stderr);
+                                print_error(eh, *stream, "invalid token");
                                 goto if_cleanup_else_loop;
                             }
                             // EOF
                             case 0: {
-                                fputs("Syntax error: expected `if` or `{`.\n", stderr);
+                                print_error(eh, *stream, "expected `if` or `{`");
                                 goto if_cleanup_else_loop;
                             }
                             case TOKEN_IF: {
                                 *stream = peek1.end;
                                 expr_t cond;
                                 block_t block;
-                                if (!expect(stream, '(', "expected `(`", NULL) ||
-                                    parse_expr(stream, &cond) != PARSE_OK) {
+                                if (!expect(stream, '(', "expected `(`", NULL, eh) ||
+                                    parse_expr(stream, &cond, eh) != PARSE_OK) {
                                     goto if_cleanup_else_loop;
                                 }
-                                if (!expect(stream, ')', "expected `)`", NULL) ||
-                                    parse_block(stream, &block) != PARSE_OK) {
+                                if (!expect(stream, ')', "expected `)`", NULL, eh) ||
+                                    parse_block(stream, &block, eh) != PARSE_OK) {
                                     free_expr(cond);
                                     goto if_cleanup_else_loop;
                                 }
@@ -315,7 +331,7 @@ pres_t parse_stmt(const char** stream, stmt_t* stmt) {
                                 break;
                             }
                             default: {
-                                if (parse_block(stream, &else_block) != PARSE_OK) {
+                                if (parse_block(stream, &else_block, eh) != PARSE_OK) {
                                     goto if_cleanup_else_loop;
                                 }
                                 cont = false;
@@ -357,7 +373,7 @@ pres_t parse_stmt(const char** stream, stmt_t* stmt) {
             arr_alloc(indices);
             expr_t value;
 
-            if (!expect(stream, TOKEN_IDENTIFIER, "expected ident", &ident)) {
+            if (!expect(stream, TOKEN_IDENTIFIER, "expected ident", &ident, eh)) {
                 arr_free(indices);
                 return PARSE_BAD;
             }
@@ -365,19 +381,20 @@ pres_t parse_stmt(const char** stream, stmt_t* stmt) {
             bool cont = true;
             while (cont) {
                 Token tok = read_token(*stream);
+                const char* saved_stream = *stream;
                 *stream = tok.end;
 
                 switch (tok.type) {
                     case TOKEN_ERROR: {
-                        fputs("Syntax error: invalid token.\n", stderr);
+                        print_error(eh, saved_stream, "invalid token");
                         goto set_arrays_cleanup;
                     }
                     case '[': {
                         expr_t expr;
-                        if (parse_expr(stream, &expr) != PARSE_OK) {
+                        if (parse_expr(stream, &expr, eh) != PARSE_OK) {
                             goto set_arrays_cleanup;
                         }
-                        if (!expect(stream, ']', "expected `]`", NULL)) {
+                        if (!expect(stream, ']', "expected `]`", NULL, eh)) {
                             free_expr(expr);
                             goto set_arrays_cleanup;
                         }
@@ -385,10 +402,10 @@ pres_t parse_stmt(const char** stream, stmt_t* stmt) {
                         break;
                     }
                     case '=': {
-                        if (parse_expr(stream, &value) != PARSE_OK) {
+                        if (parse_expr(stream, &value, eh) != PARSE_OK) {
                             goto set_arrays_cleanup;
                         }
-                        if (!expect(stream, ';', "expected `;`", NULL)) {
+                        if (!expect(stream, ';', "expected `;`", NULL, eh)) {
                             free_expr(value);
                             goto set_arrays_cleanup;
                         }
@@ -396,7 +413,7 @@ pres_t parse_stmt(const char** stream, stmt_t* stmt) {
                         break;
                     }
                     default: {
-                        fputs("Syntax error: expected `[` or `=`.\n", stderr);
+                        print_error(eh, saved_stream, "expected `[` or `=`");
                         goto set_arrays_cleanup;
                     }
                 }
@@ -414,7 +431,7 @@ pres_t parse_stmt(const char** stream, stmt_t* stmt) {
             return PARSE_OK;
         }
         default: {
-            fputs("Syntax error: expected `if`, `while`, `return`, `let`, `set`, or `do`.\n", stderr);
+            print_error(eh, saved_stream, "expected `if`, `while`, `return`, `let`, `set`, or `do`");
             return PARSE_BAD;
         }
     }
@@ -423,13 +440,14 @@ pres_t parse_stmt(const char** stream, stmt_t* stmt) {
     return PARSE_OK;
 }
 
-pres_t parse_literal(const char** stream, expr_t* expr) {
+pres_t parse_literal(const char** stream, expr_t* expr, eh_data_t eh) {
     Token t = read_token(*stream);
+    const char* saved_stream = *stream;
     *stream = t.end;
 
     switch (t.type) {
         case TOKEN_ERROR: {
-            fputs("Syntax error: invalid token.\n", stderr);
+            print_error(eh, saved_stream, "invalid token");
             return PARSE_BAD;
         }
         // EOF
@@ -464,11 +482,11 @@ pres_t parse_literal(const char** stream, expr_t* expr) {
             char* inval = NULL;
             uint64_t num = strtoul(num_s, &inval, 10);
             if (*inval != 0) {
-                fputs("Syntax error: invalid number literal.\n", stderr);
+                print_error(eh, saved_stream, "invalid number literal");
                 free(num_s);
                 return PARSE_BAD;
             } else if (errno == ERANGE) {
-                fputs("Syntax error: number literal would overflow.\n", stderr);
+                print_error(eh, saved_stream, "number literal would overflow");
                 free(num_s);
                 return PARSE_BAD;
             }
@@ -486,7 +504,7 @@ pres_t parse_literal(const char** stream, expr_t* expr) {
 
                 switch (peek.type) {
                     case TOKEN_ERROR: {
-                        fputs("Syntax error: invalid token.\n", stderr);
+                        print_error(eh, *stream, "invalid token");
                         goto array_expr_loop_cleanup;
                     }
                     case ']': {
@@ -499,7 +517,7 @@ pres_t parse_literal(const char** stream, expr_t* expr) {
                     }
                     default: {
                         expr_t expr;
-                        if (parse_expr(stream, &expr) != PARSE_OK) {
+                        if (parse_expr(stream, &expr, eh) != PARSE_OK) {
                             goto array_expr_loop_cleanup;
                         }
                         arr_append(exprs) = expr;
@@ -520,7 +538,7 @@ pres_t parse_literal(const char** stream, expr_t* expr) {
         }
 
         default: {
-            fputs("Syntax error: expected a literal expression or identifier.\n", stderr);
+            print_error(eh, saved_stream, "expected a literal or identifier");
             return PARSE_BAD;
         }
     }
@@ -528,17 +546,17 @@ pres_t parse_literal(const char** stream, expr_t* expr) {
     return PARSE_OK;
 }
 
-pres_t parse_primary(const char** stream, expr_t* expr) {
+pres_t parse_primary(const char** stream, expr_t* expr, eh_data_t eh) {
     Token peek = read_token(*stream);
     
     expr_t inner;
     switch (peek.type) {
         case '(': {
             *stream = peek.end;
-            if (parse_expr(stream, &inner) != PARSE_OK) {
+            if (parse_expr(stream, &inner, eh) != PARSE_OK) {
                 return PARSE_BAD;
             }
-            if (!expect(stream, ')', "expected `)`", NULL)) {
+            if (!expect(stream, ')', "expected `)`", NULL, eh)) {
                 free_expr(inner);
                 return PARSE_BAD;
             }
@@ -546,7 +564,7 @@ pres_t parse_primary(const char** stream, expr_t* expr) {
         }
         case '-': {
             *stream = peek.end;
-            if (parse_primary(stream, &inner) != PARSE_OK) {
+            if (parse_primary(stream, &inner, eh) != PARSE_OK) {
                 return PARSE_BAD;
             }
             inner = mk_unop(inner, UNOP_NEGATE);
@@ -554,14 +572,14 @@ pres_t parse_primary(const char** stream, expr_t* expr) {
         }
         case '!': {
             *stream = peek.end;
-            if (parse_primary(stream, &inner) != PARSE_OK) {
+            if (parse_primary(stream, &inner, eh) != PARSE_OK) {
                 return PARSE_BAD;
             }
             inner = mk_unop(inner, UNOP_NOT);
             break;
         }
         default: {
-            if (parse_literal(stream, &inner) != PARSE_OK) {
+            if (parse_literal(stream, &inner, eh) != PARSE_OK) {
                 return PARSE_BAD;
             };
             break;
@@ -584,7 +602,7 @@ pres_t parse_primary(const char** stream, expr_t* expr) {
 
                     switch (peek.type) {
                         case TOKEN_ERROR: {
-                            fputs("Syntax error: invalid token.\n", stderr);
+                            print_error(eh, *stream, "invalid token");
                             goto call_expr_loop_cleanup;
                         }
                         case ')': {
@@ -597,7 +615,7 @@ pres_t parse_primary(const char** stream, expr_t* expr) {
                         }
                         default: {
                             expr_t expr;
-                            if (parse_expr(stream, &expr) != PARSE_OK) {
+                            if (parse_expr(stream, &expr, eh) != PARSE_OK) {
                                 goto call_expr_loop_cleanup;
                             }
                             arr_append(exprs) = expr;
@@ -619,11 +637,11 @@ pres_t parse_primary(const char** stream, expr_t* expr) {
             case '[': {
                 *stream = peek.end;
                 expr_t index;
-                if (parse_literal(stream, &index) != PARSE_OK) {
+                if (parse_expr(stream, &index, eh) != PARSE_OK) {
                     free_expr(inner);
                     return PARSE_BAD;
                 }
-                if (!expect(stream, ']', "expected `]`", NULL)) {
+                if (!expect(stream, ']', "expected `]`", NULL, eh)) {
                     free_expr(inner);
                     free_expr(index);
                     return PARSE_BAD;
@@ -641,9 +659,9 @@ pres_t parse_primary(const char** stream, expr_t* expr) {
     return PARSE_OK;
 }
 
-pres_t parse_expr(const char** stream, expr_t* expr) {
+pres_t parse_expr(const char** stream, expr_t* expr, eh_data_t eh) {
     expr_t inner;
-    if (parse_primary(stream, &inner) != PARSE_OK) {
+    if (parse_primary(stream, &inner, eh) != PARSE_OK) {
         return PARSE_BAD;
     }
 
@@ -712,11 +730,66 @@ pres_t parse_expr(const char** stream, expr_t* expr) {
     }
 
     expr_t rhs;
-    if (parse_expr(stream, &rhs) != PARSE_OK) {
+    if (parse_expr(stream, &rhs, eh) != PARSE_OK) {
         free_expr(inner);
         return PARSE_BAD;
     }
 
     *expr = mk_binop(inner, rhs, binop);
     return PARSE_OK;
+}
+
+uint32_t binary_search(uint32_array_t arr, uint32_t value) {
+    uint32_t size = arr_get_size(arr); 
+    uint32_t left = 0;
+    uint32_t right = size;
+    while (left < right) {
+        uint32_t mid = left + size / 2;
+        if (arr_at(arr, mid) < value) {
+            left = mid + 1;
+        } else if (arr_at(arr, mid) > value) {
+            right = mid;
+        } else {
+            return mid;
+        }
+
+        size = right - left;
+    }
+    return left - 1;
+}
+
+uint32_t line_start(eh_data_t eh, uint32_t index) {
+    if (index >= arr_get_size(eh.line_offsets)) {
+        return eh.overall_len;
+    } else {
+        return arr_at(eh.line_offsets, index);
+    }
+}
+
+uint32_t line_num(eh_data_t eh, uint32_t offset) {
+    return binary_search(eh.line_offsets, offset);
+}
+
+uint32_t min(uint32_t a, uint32_t b) {
+    return (a < b) ? a : b;
+}
+
+uint32_t col_num(eh_data_t eh, uint32_t offset) {
+    uint32_t line = line_num(eh, offset);
+    uint32_t left = line_start(eh, line);
+    uint32_t right = line_start(eh, line + 1);
+
+    return right - left;
+}
+
+uint32_array_t mk_offsets_list(const char *stream, uint32_t len) {
+    uint32_array_t arr;
+    arr_alloc(arr);
+    arr_append(arr) = 0;
+    for (uint32_t i = 0; i < len; i++) {
+        if (stream[i] == '\n') {
+            arr_append(arr) = i + 1;
+        }
+    }
+    return arr;
 }

@@ -123,14 +123,14 @@ read_token:
 	; NOTHING! JUST ERROR OUT
 	; **********************************
 .exit:
-	mov qword [rcx], 0
-	mov qword [rcx + 8], 0
+	mov qword [rcx], rdx
+	mov qword [rcx + 8], rdx
 	mov qword [rcx + 16], TOKEN_ERROR
 	ret
 
 read_null:
-	mov qword [rcx], 0
-	mov qword [rcx + 8], 0
+	mov qword [rcx], rdx
+	mov qword [rcx + 8], rdx
 	mov qword [rcx + 16], 0
 	ret
 
@@ -207,7 +207,7 @@ read_string:
 	je .escapes
 	cmp word [rdx], 0x225C ; \"
 	je .escapes
-	cmp word [rdx], 0x5C5C ; \\
+	cmp word [rdx], 0x5C5C ; double backslash
 	je .escapes
 	
 	; Read normal character, exit if end quote
@@ -235,7 +235,7 @@ read_string2:
 .loop_after_escape:
 	cmp word [rdx], 0x275C ; \'
 	je .escapes
-	cmp word [rdx], 0x5C5C ; \\
+	cmp word [rdx], 0x5C5C ; double backslash
 	je .escapes
 	
 	; Read normal character, exit if end quote
