@@ -1,5 +1,6 @@
 section .text
 global read_token
+global read_token_unix
 
 %define TOKEN_ERROR 256
 %define TOKEN_IDENTIFIER 257
@@ -23,6 +24,7 @@ global read_token
 %define TOKEN_FALSE 309
 %define TOKEN_IMPORT 310
 %define TOKEN_NULL 311
+%define TOKEN_SET 312
 
 ; typedef struct Token {
 ;    const char* start;
@@ -94,6 +96,8 @@ read_token:
 	; **********************************
 	cmp rax, '"'
 	je read_string
+	cmp rax, "'"
+	je read_string2
 
 	; **********************************
 	; SYMBOLS
@@ -119,14 +123,14 @@ read_token:
 	; NOTHING! JUST ERROR OUT
 	; **********************************
 .exit:
-	mov qword [rcx], 0
-	mov qword [rcx + 8], 0
+	mov qword [rcx], rdx
+	mov qword [rcx + 8], rdx
 	mov qword [rcx + 16], TOKEN_ERROR
 	ret
 
 read_null:
-	mov qword [rcx], 0
-	mov qword [rcx + 8], 0
+	mov qword [rcx], rdx
+	mov qword [rcx + 8], rdx
 	mov qword [rcx + 16], 0
 	ret
 
@@ -198,11 +202,12 @@ read_string:
 .loop:
 	add rdx, 1
 
+.loop_after_escape:
 	cmp word [rdx], 0x275C ; \'
 	je .escapes
 	cmp word [rdx], 0x225C ; \"
 	je .escapes
-	cmp word [rdx], 0x5C5C ; \\
+	cmp word [rdx], 0x5C5C ; double backslash
 	je .escapes
 	
 	; Read normal character, exit if end quote
@@ -212,7 +217,35 @@ read_string:
 .escapes:
 	; We need to skip both the backslash and escape char
 	add rdx, 2
+	jmp .loop_after_escape
+.loop_exit:
+	; output a token
+	add rdx, 1 ; skip end quote
+
+	mov qword [rcx], r9
+	mov qword [rcx + 8], rdx
+	mov qword [rcx + 16], TOKEN_STRING
+	ret
+
+read_string2:
+	mov r9, rdx ; save the start position (starting after the quotes)
+.loop:
+	add rdx, 1
+
+.loop_after_escape:
+	cmp word [rdx], 0x275C ; \'
+	je .escapes
+	cmp word [rdx], 0x5C5C ; double backslash
+	je .escapes
+	
+	; Read normal character, exit if end quote
+	cmp byte [rdx], "'"
+	je .loop_exit
 	jmp .loop
+.escapes:
+	; We need to skip both the backslash and escape char
+	add rdx, 2
+	jmp .loop_after_escape
 .loop_exit:
 	; output a token
 	add rdx, 1 ; skip end quote
@@ -282,6 +315,11 @@ read_ident:
 	cmp r11d, r10d
 	mov r10d, TOKEN_LET
 	cmove rax, r10
+
+	mov r10d, 0x746573 ; set
+	cmp r11d, r10d
+	mov r10d, TOKEN_SET
+	cmove rax, r10
 	jmp .default_ident
 .ident_length4:
 	mov r11d, dword [r9]
@@ -327,7 +365,6 @@ read_ident:
 	cmp r11, r10
 	mov r10d, TOKEN_GLOBAL
 	cmove rax, r10
-	jmp .default_ident
 
 	mov r10, 0x74726F706D69 ; import
 	cmp r11, r10
