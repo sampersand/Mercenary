@@ -30,7 +30,7 @@ char* read_entire_file(const char* filepath) {
   memset(file_data, 0, length + 4);
 
   fseek(file, 0, SEEK_SET);
-  fread(file_data, 1, length, file);
+  size_t _ = fread(file_data, 1, length, file);
   file_data[length] = 0;  // just in case it's a text file
   fclose(file);
 
