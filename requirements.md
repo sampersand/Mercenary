@@ -10,7 +10,7 @@ Converts a string to an integer.
 Example: `atoi("34")` returns `34`
 
 ## `kindof(val)`
-Returns one of `"boolean"`, `"integer"`, `"string"`, or `"array"`.
+Returns one of `"boolean"`, `"null"`, `"integer"`, `"string"`, or `"array"`.
 
 Example: `kindof("12")` returns `"string"`
 
