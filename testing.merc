@@ -1,11 +1,3 @@
 function foo() {
-    if () {
-        let a = ;
-    } else if () {
-        let b = ;
-    } else if () {
-        let c = ;
-    } else {
-        let d = ;
-    }
+    let foo = [a == b, a != b, a > b, a >= b, a < b, a <= b, a & b, a | b, a + b, a - b, a * b, a / b, a % b];
 }

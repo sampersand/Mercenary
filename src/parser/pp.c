@@ -128,9 +128,9 @@ void pp_assign_var(ast_visitor_t* visitor, assign_var_t* stmt) {
             visitor->visit_expr(visitor, &arr_at(stmt->indices, i));
             printf(")");
         }
-        printf(") ");
+        printf(")");
     }
-    printf("(expr ");
+    printf(" (expr ");
     visitor->visit_expr(visitor, stmt->value);
     printf("))");
 }
@@ -192,7 +192,7 @@ void pp_index_expr(ast_visitor_t* visitor, index_expr_t* expr) {
 }
 
 void pp_bool_expr(ast_visitor_t* visitor, bool* expr) {
-    printf("%s", expr ? "true" : "false");
+    printf("%s", *expr ? "true" : "false");
 }
 
 void pp_null_expr(ast_visitor_t* visitor) {
