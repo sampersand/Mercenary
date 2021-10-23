@@ -1,4 +1,7 @@
 *.o
+
 src/parser/main
 src/lexer/main
+src/codegen/main
+
 .vscode
