@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef throw
-#define throw(msg, file, line) \
+#ifndef dyn_array_throw
+#define dyn_array_throw(msg, file, line) \
   { abort(); }
 #endif
 
@@ -70,7 +70,7 @@ arr_forward_decl(arr_unit_array) arr_decl(arr_unit_array, char)
 #define arr_copy(dst, src)                              \
   do {                                                  \
     if ((dst)->siz != (src)->siz)                       \
-      throw(arr_err_size_mismatch, __FILE__, __LINE__); \
+      dyn_array_throw(arr_err_size_mismatch, __FILE__, __LINE__); \
     memcpy((dst)->dat, (src)->dat, arr_data_size(src)); \
   } while (0)
 #define arr_shrink(arr)                                    \
@@ -92,7 +92,7 @@ arr_forward_decl(arr_unit_array) arr_decl(arr_unit_array, char)
     inline static size_t
     ACB__(size_t idx, size_t limit, const char* file, int line) {
   if (idx >= limit) {
-    throw(array_err_out_of_bounds, file, line);
+    dyn_array_throw(array_err_out_of_bounds, file, line);
   }
   return idx;
 }
@@ -108,7 +108,7 @@ arr_forward_decl(arr_unit_array) arr_decl(arr_unit_array, char)
 #define arr_chk_alloc(new_arr, arr)                \
   if (new_arr == NULL) {                           \
     free(arr);                                     \
-    throw(arr_err_out_of_mem, __FILE__, __LINE__); \
+    dyn_array_throw(arr_err_out_of_mem, __FILE__, __LINE__); \
   }
 #else
 #define arr_chk_alloc(new_arr, arr) assert(new_arr)
@@ -139,7 +139,7 @@ arr_forward_decl(arr_unit_array) arr_decl(arr_unit_array, char)
 
 #define arr_pop(arr)                                                       \
   do {                                                                     \
-    if ((arr)->siz == 0) throw(arr_err_out_of_bounds, __FILE__, __LINE__); \
+    if ((arr)->siz == 0) dyn_array_throw(arr_err_out_of_bounds, __FILE__, __LINE__); \
     arr->siz--;                                                            \
   } while (0)
 
@@ -147,8 +147,8 @@ arr_forward_decl(arr_unit_array) arr_decl(arr_unit_array, char)
   do {                                                                       \
     size_t idx = (at);                                                       \
     size_t* deref = (size_t*)(name);                                         \
-    if (deref == 0) throw(array_err_null_ptr, __FILE__, __LINE__);           \
-    if (idx >= deref[1]) throw(array_err_out_of_bounds, __FILE__, __LINE__); \
+    if (deref == 0) dyn_array_throw(array_err_null_ptr, __FILE__, __LINE__);           \
+    if (idx >= deref[1]) dyn_array_throw(array_err_out_of_bounds, __FILE__, __LINE__); \
                                                                              \
     if (deref[1] > 1) {                                                      \
       memcpy(((char*)&deref[2]) + (arr_elem_size(name) * idx),               \
