@@ -1,6 +1,5 @@
 #include <stdint.h>
 
-#include <memory>
 #include <string>
 #include <vector>
 #include <variant>
@@ -15,24 +14,34 @@ template<typename T>
 using unique_ptr = std::unique_ptr<T>;
 
 // Forward declaration, so the recursive variant works
+template<typename T>
 struct Identifier;
+
+template<typename T>
 struct ListLiteral;
 struct IntegerLiteral;
 struct BooleanLiteral;
 struct NullLiteral;
+
+template<typename T>
 struct BinaryOperation;
+
+template<typename T>
 struct UnaryOperation;
 
-using Expression = boost::variant<boost::recursive_wrapper<UnaryOperation>, boost::recursive_wrapper<BinaryOperation>,
-    NullLiteral, BooleanLiteral, IntegerLiteral, ListLiteral, Identifier
+template<typename T>
+using Expression = boost::variant<boost::recursive_wrapper<UnaryOperation<T>>, boost::recursive_wrapper<BinaryOperation<T>>,
+    NullLiteral, BooleanLiteral, IntegerLiteral, ListLiteral<T>, Identifier<T>
 >;
 
+template<typename T>
 struct Identifier {
-    string value;
+    T value;
 };
 
+template<typename T>
 struct ListLiteral {
-    vector<Expression> value;
+    vector<Expression<T>> value;
 };
 
 struct IntegerLiteral {
@@ -61,10 +70,11 @@ enum BinaryFlavor {
     ModulousOrRemainder,
 };
 
+template<typename T>
 struct BinaryOperation {
     BinaryFlavor binary_flavor;
-    unique_ptr<Expression> left;
-    unique_ptr<Expression> right;
+    unique_ptr<Expression<T>> left;
+    unique_ptr<Expression<T>> right;
 };
 
 enum UnaryFlavor {
@@ -72,50 +82,69 @@ enum UnaryFlavor {
     Not,
 };
 
+template<typename T>
 struct UnaryOperation {
     UnaryFlavor unary_flavor;
-    unique_ptr<Expression> contents;
+    unique_ptr<Expression<T>> contents;
 };
 
 // More forward declaration
+template<typename T>
 struct Do;
+
+template<typename T>
 struct VariableDeclaration;
+
+template<typename T>
 struct Assignment;
+
+template<typename T>
 struct Return;
+
+template<typename T>
 struct While;
+
+template<typename T>
 struct If;
 
-using Statement = boost::variant<boost::recursive_wrapper<If>, boost::recursive_wrapper<While>, 
-    Return, Assignment, VariableDeclaration, Do
+template<typename T>
+using Statement = boost::variant<boost::recursive_wrapper<If<T>>, boost::recursive_wrapper<While<T>>, 
+    Return<T>, Assignment<T>, VariableDeclaration<T>, Do<T>
 >;
 
+template<typename T>
 struct Do {
-    Expression content;
+    Expression<T> content;
 };
 
+template<typename T>
 struct VariableDeclaration {
-    string identifier;
-    Expression content;
+    T identifier;
+    Expression<T> content;
 };
 
+template<typename T>
 struct Assignment {
-    string identifier;
-    Expression content;
+    T identifier;
+    Expression<T> content;
 };
 
+template<typename T>
 struct Return {
-    Expression content;
+    Expression<T> content;
 };
 
+template<typename T>
 struct While {
-    Expression condition;
-    vector<Statement> body;
+    Expression<T> condition;
+    vector<Statement<T>> body;
 };
 
+template<typename T>
 struct If {
-    Expression condition;
-    vector<Statement> on_true;
-    vector<Statement> on_false;
+    Expression<T> condition;
+    vector<Statement<T>> on_true;
+    vector<Statement<T>> on_false;
 };
 
 struct Import {
@@ -126,14 +155,21 @@ struct Global {
     string identifier;
 };
 
+template<typename T>
 struct Function {
     string identifier;
-    vector<string> parms;
-    vector<Statement> body;
+    vector<T> parms;
+    vector<Statement<T>> body;
 };
 
-using Declaration = std::variant<Import, Global, Function>;
+template<typename T>
+using Declaration = std::variant<Import, Global, Function<T>>;
 
+// AST is a template so that it can go from string to indexes without being duplicated
+template<typename T>
 struct AST {
-    std::vector<Declaration> declarations;
+    std::vector<Declaration<T>> declarations;
 };
+
+using StringAST = AST<string>;
+using IndexAst = AST<uint64_t>;
