@@ -7,7 +7,8 @@ LDFLAGS += -no-pie
 NASM_FORMAT ?= elf64
 
 CXX ?= g++
-LDLIBS = -lstdc++ -lm
+LDLIBS ?= -lstdc++ -lm
+CXXFLAGS ?= -std=c++17 -L/usr/include/boost -lboost_filesystem
 
 ifeq ($(ASAN),1)
 	LDFLAGS += -fsanitize=address
@@ -37,7 +38,11 @@ src/lexer/lexer.o: src/lexer/lexer.asm
 
 src/lexer/main: src/lexer/main.o src/lexer/lexer.o
 
-src/codegen/main: src/codegen/main.o
+codegen_objs = src/codegen/ast.o
+
+$(codegen_objs): %.o: %.cpp
+
+src/codegen/main: src/codegen/main.o $(codegen_objs) src/lexer/lexer.o $(parser_objs)
 
 clean:
 	rm -f src/**/*.o src/lexer/main src/parser/main

@@ -19,4 +19,5 @@ The following lovely people contributed to the original project:
 ## Setup
 
  - Install https://www.nasm.us/
+ - Install 'Boost.Variant', https://www.boost.org/
  - Run `make` 
