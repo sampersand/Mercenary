@@ -10,9 +10,6 @@ using string = std::string;
 template<typename T>
 using vector = std::vector<T>;
 
-template<typename T>
-using unique_ptr = std::unique_ptr<T>;
-
 // Forward declaration, so the recursive variant works
 template<typename T>
 struct Identifier;
@@ -73,8 +70,8 @@ enum BinaryFlavor {
 template<typename T>
 struct BinaryOperation {
     BinaryFlavor binary_flavor;
-    unique_ptr<Expression<T>> left;
-    unique_ptr<Expression<T>> right;
+    Expression<T> left;
+    Expression<T> right;
 };
 
 enum UnaryFlavor {
@@ -85,7 +82,7 @@ enum UnaryFlavor {
 template<typename T>
 struct UnaryOperation {
     UnaryFlavor unary_flavor;
-    unique_ptr<Expression<T>> contents;
+    Expression<T> contents;
 };
 
 // More forward declaration
