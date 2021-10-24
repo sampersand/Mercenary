@@ -40,8 +40,6 @@ src/lexer/main: src/lexer/main.o src/lexer/lexer.o
 
 codegen_objs = src/codegen/ast.o
 
-$(codegen_objs): %.o: %.cpp
-
 src/codegen/main: src/codegen/main.o $(codegen_objs) src/lexer/lexer.o $(parser_objs)
 
 clean:
