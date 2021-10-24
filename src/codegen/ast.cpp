@@ -1,172 +1,101 @@
+#include "ast.hpp"
+
+#include <cctype>
+#include <set>
 #include <stdint.h>
-
 #include <string>
-#include <vector>
-#include <variant>
-#include <boost/variant.hpp>
 
-using string = std::string;
+std::monostate panic() {
+	volatile int *p = NULL;
+	*p = 1;
+	return std::monostate {};
+}
 
-template<typename T>
-using vector = std::vector<T>;
+string parseHex(const string& s) {
+    std::set<char> validChars = {
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        'a', 'b', 'c', 'd', 'e', 'f',
+    };
 
-// Forward declaration, so the recursive variant works
-template<typename T>
-struct Identifier;
+    if (s.length() < 2 && validChars.contains(std::tolower(s[0])) && validChars.contains(std::tolower(s[1]))) {
+        panic();
+    }
+    
+    string hex = s.substr(0, 2);
+    for(char& c : hex)
+    {
+        c = tolower(c);
+    }
 
-template<typename T>
-struct ListLiteral;
-struct IntegerLiteral;
-struct BooleanLiteral;
-struct NullLiteral;
+    int len = hex.length();
+    string newString = "";
 
-template<typename T>
-struct BinaryOperation;
+    for(int i = 0; i < len; i += 2)
+    {
+        string byte = hex.substr(i, 2);
+        char chr = (char) (int)strtol(byte.c_str(), NULL, 16);
+        newString.push_back(chr);
+    }
 
-template<typename T>
-struct UnaryOperation;
+    return newString;
+}
 
-template<typename T>
-using Expression = boost::variant<boost::recursive_wrapper<UnaryOperation<T>>, boost::recursive_wrapper<BinaryOperation<T>>,
-    NullLiteral, BooleanLiteral, IntegerLiteral, ListLiteral<T>, Identifier<T>
->;
+string unescape(const string& s) {
+    string output = "";
 
-template<typename T>
-struct Identifier {
-    T value;
-};
+    for (auto it = s.cbegin(); it != s.cend(); it++) {
+        const int64_t next_i = -std::distance(it, s.cbegin()) + 1;
 
-template<typename T>
-struct ListLiteral {
-    vector<Expression<T>> value;
-};
+        if (*it == '\\') {
+            if (next_i >= s.length()) {
+                panic();
+            } else {
+                switch (s[next_i])
+                {
+                case 'n':
+                    output.push_back('\n');
+                    break;
 
-struct IntegerLiteral {
-    uint64_t value;
-};
+                case 't':
+                    output.push_back('\t');
+                    break;
 
-struct BooleanLiteral {
-    bool value;
-};
+                case 'f':
+                    output.push_back('\f');
+                    break;
 
-struct NullLiteral {};
+                case 'r':
+                    output.push_back('\r');
+                    break;
 
-enum BinaryFlavor {
-    Equal,
-    NotEqual,
-    GreaterThan,
-    GreaterThanOrEqual,
-    LessThan,
-    LessThanOrEqual,
-    And,
-    Or,
-    Addition,
-    Subtraction,
-    Multiplication,
-    Division,
-    ModulousOrRemainder,
-};
+                case '\"':
+                    output.push_back('\"');
+                    break;
 
-template<typename T>
-struct BinaryOperation {
-    BinaryFlavor binary_flavor;
-    Expression<T> left;
-    Expression<T> right;
-};
+                case '\'':
+                    output.push_back('\'');
+                    break;
 
-enum UnaryFlavor {
-    Negate,
-    Not,
-};
+                case '\\':
+                    output.push_back('\\');
+                    break;
 
-template<typename T>
-struct UnaryOperation {
-    UnaryFlavor unary_flavor;
-    Expression<T> contents;
-};
+                case 'x':
+                    output.append(parseHex(s.substr(next_i + 1)));
+                    it += 3;
+                    break;
+                
+                default:
+                    panic();
+                    break;
+                };
 
-// More forward declaration
-template<typename T>
-struct Do;
+                it++;
+            };
+        } else {
+            output.push_back(*it);
+        };
+    };
 
-template<typename T>
-struct VariableDeclaration;
-
-template<typename T>
-struct Assignment;
-
-template<typename T>
-struct Return;
-
-template<typename T>
-struct While;
-
-template<typename T>
-struct If;
-
-template<typename T>
-using Statement = boost::variant<boost::recursive_wrapper<If<T>>, boost::recursive_wrapper<While<T>>, 
-    Return<T>, Assignment<T>, VariableDeclaration<T>, Do<T>
->;
-
-template<typename T>
-struct Do {
-    Expression<T> content;
-};
-
-template<typename T>
-struct VariableDeclaration {
-    T identifier;
-    Expression<T> content;
-};
-
-template<typename T>
-struct Assignment {
-    T identifier;
-    Expression<T> content;
-};
-
-template<typename T>
-struct Return {
-    Expression<T> content;
-};
-
-template<typename T>
-struct While {
-    Expression<T> condition;
-    vector<Statement<T>> body;
-};
-
-template<typename T>
-struct If {
-    Expression<T> condition;
-    vector<Statement<T>> on_true;
-    vector<Statement<T>> on_false;
-};
-
-struct Import {
-    string path;
-};
-
-struct Global {
-    string identifier;
-};
-
-template<typename T>
-struct Function {
-    string identifier;
-    vector<T> parms;
-    vector<Statement<T>> body;
-};
-
-template<typename T>
-using Declaration = std::variant<Import, Global, Function<T>>;
-
-// AST is a template so that it can go from string to indexes without being duplicated
-template<typename T>
-struct AST {
-    std::vector<Declaration<T>> declarations;
-};
-
-using StringAST = AST<string>;
-using IndexAst = AST<uint64_t>;
+    return output;
+}

@@ -1,6 +1,11 @@
+#include "ast.hpp"
+
 #include <iostream>
 
 int main() 
 {
-    std::cout << "Hello World!" << std::endl;
+    string foo = "Hello\\n World!";
+    const string& foo2 = foo; 
+
+    std::cout << unescape(foo2) << std::endl;
 }

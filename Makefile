@@ -8,7 +8,7 @@ NASM_FORMAT ?= elf64
 
 CXX ?= g++
 LDLIBS ?= -lstdc++ -lm
-CXXFLAGS ?= -std=c++17 -L/usr/include/boost -lboost_filesystem
+CXXFLAGS ?= -std=c++2a -L/usr/include/boost -lboost_filesystem
 
 ifeq ($(ASAN),1)
 	LDFLAGS += -fsanitize=address
