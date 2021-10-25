@@ -10,29 +10,28 @@ extern "C"
 
 #include <memory>
 #include <string>
+#include <tuple>
 #include <vector>
 #include <variant>
-
-#include <boost/variant.hpp>
 
 using string = std::string;
 
 template<typename T>
 using vector = std::vector<T>;
 
-template<typename T>
-using unique_ptr = std::unique_ptr<T>;
-
 namespace codegen {
     // Forward declaration, so the recursive variant works
-    template<typename T>
-    struct Identifier;
 
+    struct NullLiteral;
+    struct BooleanLiteral;
+    struct IntegerLiteral;
+    struct StringLiteral;
+    
     template<typename T>
     struct ListLiteral;
-    struct IntegerLiteral;
-    struct BooleanLiteral;
-    struct NullLiteral;
+
+    template<typename T>
+    struct Identifier;
 
     template<typename T>
     struct BinaryOperation;
@@ -41,13 +40,31 @@ namespace codegen {
     struct UnaryOperation;
 
     template<typename T>
-    using Expression = std::variant<boost::recursive_wrapper<UnaryOperation<T>>, boost::recursive_wrapper<BinaryOperation<T>>,
-        NullLiteral, BooleanLiteral, IntegerLiteral, ListLiteral<T>, Identifier<T>
-    >;
+    struct Index;
 
     template<typename T>
-    struct Identifier {
-        T value;
+    struct Call;
+
+    template<typename T>
+    using Expression = std::variant<
+        NullLiteral, BooleanLiteral, IntegerLiteral,
+        StringLiteral, ListLiteral<T>, Identifier<T>,
+        BinaryOperation<T>, UnaryOperation<T>, Index<T>,
+        Call<T>
+    >;
+
+    struct NullLiteral {};
+
+    struct BooleanLiteral {
+        bool value;
+    };
+
+    struct IntegerLiteral {
+        int64_t value;
+    };
+
+    struct StringLiteral {
+        string value;
     };
 
     template<typename T>
@@ -55,15 +72,10 @@ namespace codegen {
         vector<Expression<T>> value;
     };
 
-    struct IntegerLiteral {
-        uint64_t value;
+    template<typename T>
+    struct Identifier {
+        T value;
     };
-
-    struct BooleanLiteral {
-        bool value;
-    };
-
-    struct NullLiteral {};
 
     enum BinaryFlavor {
         Equal,
@@ -83,9 +95,9 @@ namespace codegen {
 
     template<typename T>
     struct BinaryOperation {
-        BinaryFlavor binary_flavor;
-        unique_ptr<Expression<T>> left;
-        unique_ptr<Expression<T>> right;
+        std::shared_ptr<Expression<T>> left;
+        BinaryFlavor flavor;
+        std::shared_ptr<Expression<T>> right;
     };
 
     enum UnaryFlavor {
@@ -95,8 +107,20 @@ namespace codegen {
 
     template<typename T>
     struct UnaryOperation {
-        UnaryFlavor unary_flavor;
-        unique_ptr<Expression<T>> contents;
+        UnaryFlavor flavor;
+        std::shared_ptr<Expression<T>> contents;
+    };
+
+    template<typename T>
+    struct Index {
+        std::shared_ptr<Expression<T>> list;
+        std::shared_ptr<Expression<T>> number;
+    };
+
+    template<typename T>
+    struct Call {
+        std::shared_ptr<Expression<T>> function;
+        vector<Expression<T>> args;
     };
 
     // More forward declaration
@@ -119,8 +143,9 @@ namespace codegen {
     struct If;
 
     template<typename T>
-    using Statement = std::variant<boost::recursive_wrapper<If<T>>, boost::recursive_wrapper<While<T>>, 
-        Return<T>, Assignment<T>, VariableDeclaration<T>, Do<T>
+    using Statement = std::variant<
+        If<T>, While<T>, Return<T>,
+        Assignment<T>, VariableDeclaration<T>, Do<T>
     >;
 
     template<typename T>
@@ -137,6 +162,7 @@ namespace codegen {
     template<typename T>
     struct Assignment {
         T identifier;
+        vector<Expression<T>> indexes; 
         Expression<T> content;
     };
 
@@ -153,9 +179,8 @@ namespace codegen {
 
     template<typename T>
     struct If {
-        Expression<T> condition;
-        vector<Statement<T>> on_true;
-        vector<Statement<T>> on_false;
+        vector<std::tuple<Expression<T>, vector<Statement<T>>>> if_pairs;
+        vector<Statement<T>> else_body;
     };
 
     struct Import {
@@ -179,11 +204,18 @@ namespace codegen {
     // AST is a template so that it can go from string to indexes without being duplicated
     template<typename T>
     struct AST {
-        std::vector<Declaration<T>> declarations;
+        vector<Declaration<T>> declarations;
     };
 
-    using StringAST = unique_ptr<AST<string>>;
-    using IndexAST = unique_ptr<AST<uint64_t>>;
+    using StringAST = AST<string>;
+    using StringFunction = Function<string>;
+    using StringStatement = Statement<string>;
+    using StringExpression = Expression<string>;
+
+    using IndexAST = AST<uint64_t>;
+    using IndexFunction = Function<uint64_t>;
+    using IndexStatement = Statement<uint64_t>;
+    using IndexExpression = Expression<uint64_t>;
 
     StringAST to_cpp_ast(program_t);
 }

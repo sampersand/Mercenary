@@ -1,9 +1,13 @@
+extern "C" {
+    #include "../parser/ast.h"
+    #include "../parser/dyn_array.h"
+}
+
 #include "ast.hpp"
 
-#include <cctype>
 #include <set>
-#include <stdint.h>
-#include <string>
+
+using namespace codegen;
 
 std::monostate panic() {
 	volatile int *p = NULL;
@@ -98,4 +102,290 @@ string unescape(const string& s) {
     };
 
     return output;
+}
+
+string to_cpp_str(string_t string_t_c) {
+    string global_name = string_t_c.s;
+    return global_name;
+}
+
+BinaryFlavor to_cpp_binary(binop_t binary_op_c) {
+    switch (binary_op_c) {
+        case binop_t::BINOP_EQ:
+            return BinaryFlavor::NotEqual;
+            break;
+        
+        case binop_t::BINOP_NE:
+            return BinaryFlavor::NotEqual;
+            break;
+
+        case binop_t::BINOP_GT:
+            return BinaryFlavor::GreaterThan;
+            break;
+
+        case binop_t::BINOP_GE:
+            return BinaryFlavor::GreaterThanOrEqual;
+            break;
+
+        case binop_t::BINOP_LT:
+            return BinaryFlavor::LessThan;
+            break;
+
+        case binop_t::BINOP_LE:
+            return BinaryFlavor::LessThanOrEqual;
+            break;
+
+        case binop_t::BINOP_AND:
+            return BinaryFlavor::And;
+            break;
+
+        case binop_t::BINOP_OR:
+            return BinaryFlavor::Or;
+            break;
+
+        case binop_t::BINOP_ADD:
+            return BinaryFlavor::Addition;
+            break;
+
+        case binop_t::BINOP_SUB:
+            return BinaryFlavor::Subtraction;
+            break;
+
+        case binop_t::BINOP_MUL:
+            return BinaryFlavor::Multiplication;
+            break;
+
+        case binop_t::BINOP_DIV:
+            return BinaryFlavor::Division;
+            break;
+
+        case binop_t::BINOP_REM:
+            return BinaryFlavor::ModulousOrRemainder;
+            break;
+
+        default:
+            panic();
+            return BinaryFlavor::ModulousOrRemainder; // Unreachable, makes the warnings happy 
+            break;
+    }
+}
+
+
+UnaryFlavor to_cpp_unary(unop_t unary_op_c) {
+    switch (unary_op_c) {
+        case unop_t::UNOP_NEGATE:
+            return UnaryFlavor::Negate;
+            break;
+        case unop_t::UNOP_NOT:
+            return UnaryFlavor::Not;
+            break;
+        default:
+            panic();
+            return UnaryFlavor::Not; // Unreachable, makes the warnings happy 
+            break;
+    }
+}
+
+StringExpression to_cpp_expression(expr_t* expr_c) {
+    switch (expr_c->kind) {
+    case expr::EXPR_BINARY:
+        return BinaryOperation<string> {
+            left: std::make_shared<StringExpression>(to_cpp_expression(expr_c->value.binary.lhs)),
+            flavor: to_cpp_binary(expr_c->value.binary.op),
+            right: std::make_shared<StringExpression>(to_cpp_expression(expr_c->value.binary.rhs)),
+        };
+        break;
+
+    case expr::EXPR_UNARY:
+        return UnaryOperation<string> {
+            flavor: to_cpp_unary(expr_c->value.unary.op),
+            contents: std::make_shared<StringExpression>(to_cpp_expression(expr_c->value.unary.subexpr)),
+        };
+        break;
+
+    case expr::EXPR_CALL: {
+        vector<StringExpression> args = {};
+
+        for (size_t i = 0; i < arr_get_size(expr_c->value.call.args); i++) {
+            args.push_back(to_cpp_expression(&arr_at(expr_c->value.call.args, i)));
+        }
+
+        return Call<string> {
+            function: std::make_shared<StringExpression>(to_cpp_expression(expr_c->value.call.func)),
+            args: args,
+        };
+        break;
+    }
+
+    case expr::EXPR_INDEX:
+        return Index<string> {
+            list: std::make_shared<StringExpression>(to_cpp_expression(expr_c->value.index.array)),
+            number: std::make_shared<StringExpression>(to_cpp_expression(expr_c->value.index.index)),
+        };
+        break;
+
+    case expr::EXPR_BOOL:
+        return BooleanLiteral { value: expr_c->value.bool_expr};
+        break;
+
+    case expr::EXPR_NUMBER:
+        return IntegerLiteral { value: static_cast<int64_t>(expr_c->value.number) };
+        break;
+
+    case expr::EXPR_STRING:
+        return StringLiteral { value: unescape(to_cpp_str(expr_c->value.string)) };
+        break;
+
+    case expr::EXPR_IDENT:
+        return Identifier<string> { value: to_cpp_str(expr_c->value.string) };
+        break;
+
+    case expr::EXPR_ARRAY: {
+        vector<StringExpression> args = {};
+
+        for (size_t i = 0; i < arr_get_size(expr_c->value.array); i++) {
+            args.push_back(to_cpp_expression(&arr_at(expr_c->value.array, i)));
+        }
+
+        return ListLiteral<string> { value: args };
+        break;
+    }
+
+    case expr::EXPR_NULL:
+        return NullLiteral {};
+        break;
+    
+    default:
+        panic();
+        return NullLiteral {}; // Unreachable, makes the warnings happy 
+        break;
+    }
+}
+
+// Forward declaration for blocks
+vector<StringStatement> to_cpp_body(block_t*);
+
+StringStatement to_cpp_statement(stmt_t* stmt_c) {
+    switch (stmt_c->kind) {
+    case stmt_t::STMT_IF: {
+        if_stmt_t if_c = stmt_c->value.if_stmt;
+        vector<std::tuple<Expression<string>, vector<Statement<string>>>> if_pairs = {};
+
+        if_pairs.push_back(std::tuple<Expression<string>, vector<Statement<string>>>{
+            to_cpp_expression(if_c.main_cond),
+            to_cpp_body(&if_c.main_block)
+        });
+
+        for (size_t i = 0; i < arr_get_size(if_c.elif_conds); i++) {
+            if_pairs.push_back(std::tuple<Expression<string>, vector<Statement<string>>>{
+                to_cpp_expression(&arr_at(if_c.elif_conds, i)),
+                to_cpp_body(&arr_at(if_c.elif_blocks, i))
+            });
+        }
+
+        return If<string> {
+            if_pairs: if_pairs,
+            else_body: to_cpp_body(&stmt_c->value.if_stmt.else_block),
+        };
+        break;
+    }
+
+    case stmt_t::STMT_WHILE:
+        return While<string> {
+            condition: to_cpp_expression(stmt_c->value.while_stmt.cond),
+            body: to_cpp_body(&stmt_c->value.while_stmt.block),
+        };
+        break;
+
+    case stmt_t::STMT_RETURN:
+        return Return<string> {
+            content: to_cpp_expression(stmt_c->value.expr),
+        };
+        break;
+
+    case stmt_t::STMT_DECLARE_VAR:
+        return VariableDeclaration<string> {
+            identifier: to_cpp_str(stmt_c->value.declare_var.ident),
+            content: to_cpp_expression(stmt_c->value.declare_var.value),
+        };
+        break;
+
+    case stmt_t::STMT_ASSIGN_VAR: {
+        vector<StringExpression> indexes = {};
+
+        for (size_t i = 0; i < arr_get_size(stmt_c->value.assign_var.indices); i++) {
+            indexes.push_back(to_cpp_expression(&arr_at(stmt_c->value.assign_var.indices, i)));
+        }
+
+        return Assignment<string> {
+            identifier: to_cpp_str(stmt_c->value.assign_var.ident),
+            indexes: indexes,
+            content: to_cpp_expression(stmt_c->value.assign_var.value),
+        };
+        break;
+    }
+
+    case stmt_t::STMT_DO:
+        return Do<string> {
+            content: to_cpp_expression(stmt_c->value.expr),
+        };
+        break;
+
+    default:
+        panic();
+        return Do<string> { content: to_cpp_expression(stmt_c->value.expr) }; // Unreachable, makes the warnings happy 
+        break;
+    }
+}
+
+vector<StringStatement> to_cpp_body(block_t* body_c) {
+    vector<StringStatement> statements = {};
+
+    for (size_t i = 0; i < arr_get_size(*body_c); i++) {
+        statements.push_back(to_cpp_statement(&arr_at(*body_c, i)));
+    }
+
+    return statements;
+}
+
+StringFunction to_cpp_function(fn_decl_t* function_c) {
+    vector<string> parms = {};
+
+    for (size_t i = 0; i < arr_get_size(function_c->args); i++) {
+        parms.push_back(to_cpp_str(arr_at(function_c->args, i)));
+    }
+
+    return StringFunction {
+        identifier: to_cpp_str(function_c->name),
+        parms: parms,
+        body: to_cpp_body(&function_c->block),
+    };
+}
+
+StringAST to_cpp_ast(program_t* program_c) {
+    vector<Declaration<string>> declarations = {};
+
+    for (size_t i = 0; i < arr_get_size(*program_c); i++) {
+        decl_t declaration_c = arr_at(*program_c, i);
+
+        switch (declaration_c.kind) {
+        case decl_t::DECL_FUNCTION:
+            declarations.push_back(to_cpp_function(&declaration_c.value.fn));
+            break;
+
+        case decl_t::DECL_GLOBAL:
+            declarations.push_back(Global { identifier: to_cpp_str(declaration_c.value.string) });
+            break;
+
+        case decl_t::DECL_IMPORT:
+            declarations.push_back(Import { path: to_cpp_str(declaration_c.value.string) });
+            break;
+        
+        default: 
+            panic();
+            break;
+        }
+    }
+
+    return StringAST { declarations: declarations };
 }
