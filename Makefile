@@ -38,7 +38,7 @@ src/lexer/lexer.o: src/lexer/lexer.asm
 
 src/lexer/main: src/lexer/main.o src/lexer/lexer.o
 
-codegen_objs = src/codegen/ast.o
+codegen_objs = src/codegen/ast.o src/codegen/middle_end.o
 
 src/codegen/main: src/codegen/main.o $(codegen_objs) src/lexer/lexer.o $(parser_objs)
 

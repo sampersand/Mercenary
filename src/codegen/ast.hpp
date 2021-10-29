@@ -8,7 +8,6 @@ extern "C"
     #include "../parser/ast.h"
 }
 
-#include <memory>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -20,6 +19,23 @@ template<typename T>
 using vector = std::vector<T>;
 
 namespace codegen {
+    template<typename T>
+    struct GrossPtr {
+        vector<T> value;
+
+        T get() const {
+            return value[0];
+        }
+    };
+
+    template<typename T>
+    GrossPtr<T> make_gross(T t) {
+        return GrossPtr<T> { value: {t}};
+    }
+
+    template<typename T>
+    GrossPtr<T> make_gross(T);
+
     // Forward declaration, so the recursive variant works
 
     struct NullLiteral;
@@ -95,9 +111,9 @@ namespace codegen {
 
     template<typename T>
     struct BinaryOperation {
-        std::shared_ptr<Expression<T>> left;
+        GrossPtr<Expression<T>> left;
         BinaryFlavor flavor;
-        std::shared_ptr<Expression<T>> right;
+        GrossPtr<Expression<T>> right;
     };
 
     enum UnaryFlavor {
@@ -108,18 +124,18 @@ namespace codegen {
     template<typename T>
     struct UnaryOperation {
         UnaryFlavor flavor;
-        std::shared_ptr<Expression<T>> contents;
+        GrossPtr<Expression<T>> content;
     };
 
     template<typename T>
     struct Index {
-        std::shared_ptr<Expression<T>> list;
-        std::shared_ptr<Expression<T>> number;
+        GrossPtr<Expression<T>> list;
+        GrossPtr<Expression<T>> number;
     };
 
     template<typename T>
     struct Call {
-        std::shared_ptr<Expression<T>> function;
+        GrossPtr<Expression<T>> function;
         vector<Expression<T>> args;
     };
 
@@ -207,15 +223,19 @@ namespace codegen {
         vector<Declaration<T>> declarations;
     };
 
+    using IndexName = std::variant<string, uint64_t>;
+
     using StringAST = AST<string>;
+    using StringDeclaration = Declaration<string>;
     using StringFunction = Function<string>;
     using StringStatement = Statement<string>;
     using StringExpression = Expression<string>;
 
-    using IndexAST = AST<uint64_t>;
-    using IndexFunction = Function<uint64_t>;
-    using IndexStatement = Statement<uint64_t>;
-    using IndexExpression = Expression<uint64_t>;
+    using IndexAST = AST<IndexName>;
+    using IndexDeclaration = Declaration<IndexName>;
+    using IndexFunction = Function<IndexName>;
+    using IndexStatement = Statement<IndexName>;
+    using IndexExpression = Expression<IndexName>;
 
     StringAST to_cpp_ast(program_t);
 }

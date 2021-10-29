@@ -2,7 +2,11 @@
 
 #include <iostream>
 
-int main() 
+#include "ast.hpp"
+
+using namespace codegen;
+
+int main()
 {
-    std::cout << "hello" << std::endl;
+    std::cout << sizeof(GrossPtr<bool>) << std::endl;
 }

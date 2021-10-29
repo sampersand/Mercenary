@@ -16,12 +16,12 @@ std::monostate panic() {
 }
 
 string parseHex(const string& s) {
-    std::set<char> validChars = {
+    std::set<char> valid_chars = {
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
         'a', 'b', 'c', 'd', 'e', 'f',
     };
 
-    if (s.length() < 2 && validChars.contains(std::tolower(s[0])) && validChars.contains(std::tolower(s[1]))) {
+    if (s.length() < 2 && valid_chars.contains(std::tolower(s[0])) && valid_chars.contains(std::tolower(s[1]))) {
         panic();
     }
     
@@ -32,16 +32,16 @@ string parseHex(const string& s) {
     }
 
     int len = hex.length();
-    string newString = "";
+    string new_string = "";
 
     for(int i = 0; i < len; i += 2)
     {
         string byte = hex.substr(i, 2);
         char chr = (char) (int)strtol(byte.c_str(), NULL, 16);
-        newString.push_back(chr);
+        new_string.push_back(chr);
     }
 
-    return newString;
+    return new_string;
 }
 
 string unescape(const string& s) {
@@ -165,7 +165,7 @@ BinaryFlavor to_cpp_binary(binop_t binary_op_c) {
 
         default:
             panic();
-            return BinaryFlavor::ModulousOrRemainder; // Unreachable, makes the warnings happy 
+            return BinaryFlavor::ModulousOrRemainder; // Unreachable, makes the compiler happy 
             break;
     }
 }
@@ -181,7 +181,7 @@ UnaryFlavor to_cpp_unary(unop_t unary_op_c) {
             break;
         default:
             panic();
-            return UnaryFlavor::Not; // Unreachable, makes the warnings happy 
+            return UnaryFlavor::Not; // Unreachable, makes the compiler happy 
             break;
     }
 }
@@ -190,16 +190,16 @@ StringExpression to_cpp_expression(expr_t* expr_c) {
     switch (expr_c->kind) {
     case expr::EXPR_BINARY:
         return BinaryOperation<string> {
-            left: std::make_shared<StringExpression>(to_cpp_expression(expr_c->value.binary.lhs)),
+            left: make_gross<StringExpression>(to_cpp_expression(expr_c->value.binary.lhs)),
             flavor: to_cpp_binary(expr_c->value.binary.op),
-            right: std::make_shared<StringExpression>(to_cpp_expression(expr_c->value.binary.rhs)),
+            right: make_gross<StringExpression>(to_cpp_expression(expr_c->value.binary.rhs)),
         };
         break;
 
     case expr::EXPR_UNARY:
         return UnaryOperation<string> {
             flavor: to_cpp_unary(expr_c->value.unary.op),
-            contents: std::make_shared<StringExpression>(to_cpp_expression(expr_c->value.unary.subexpr)),
+            content: make_gross<StringExpression>(to_cpp_expression(expr_c->value.unary.subexpr)),
         };
         break;
 
@@ -211,7 +211,7 @@ StringExpression to_cpp_expression(expr_t* expr_c) {
         }
 
         return Call<string> {
-            function: std::make_shared<StringExpression>(to_cpp_expression(expr_c->value.call.func)),
+            function: make_gross<StringExpression>(to_cpp_expression(expr_c->value.call.func)),
             args: args,
         };
         break;
@@ -219,8 +219,8 @@ StringExpression to_cpp_expression(expr_t* expr_c) {
 
     case expr::EXPR_INDEX:
         return Index<string> {
-            list: std::make_shared<StringExpression>(to_cpp_expression(expr_c->value.index.array)),
-            number: std::make_shared<StringExpression>(to_cpp_expression(expr_c->value.index.index)),
+            list: make_gross<StringExpression>(to_cpp_expression(expr_c->value.index.array)),
+            number: make_gross<StringExpression>(to_cpp_expression(expr_c->value.index.index)),
         };
         break;
 
@@ -229,6 +229,7 @@ StringExpression to_cpp_expression(expr_t* expr_c) {
         break;
 
     case expr::EXPR_NUMBER:
+        // This cast may not make sense, I'm not sure what the parse is doing?
         return IntegerLiteral { value: static_cast<int64_t>(expr_c->value.number) };
         break;
 
@@ -257,7 +258,7 @@ StringExpression to_cpp_expression(expr_t* expr_c) {
     
     default:
         panic();
-        return NullLiteral {}; // Unreachable, makes the warnings happy 
+        return NullLiteral {}; // Unreachable, makes the compiler happy
         break;
     }
 }
@@ -333,7 +334,7 @@ StringStatement to_cpp_statement(stmt_t* stmt_c) {
 
     default:
         panic();
-        return Do<string> { content: to_cpp_expression(stmt_c->value.expr) }; // Unreachable, makes the warnings happy 
+        return Do<string> { content: to_cpp_expression(stmt_c->value.expr) }; // Unreachable, makes the compiler happy 
         break;
     }
 }
@@ -363,7 +364,7 @@ StringFunction to_cpp_function(fn_decl_t* function_c) {
 }
 
 StringAST to_cpp_ast(program_t* program_c) {
-    vector<Declaration<string>> declarations = {};
+    vector<StringDeclaration> declarations = {};
 
     for (size_t i = 0; i < arr_get_size(*program_c); i++) {
         decl_t declaration_c = arr_at(*program_c, i);
