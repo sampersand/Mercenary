@@ -1,6 +1,3 @@
-#ifndef AST_CODEGEN
-#define AST_CODEGEN
-
 #include <stdint.h>
 
 extern "C"
@@ -17,6 +14,9 @@ using string = std::string;
 
 template<typename T>
 using vector = std::vector<T>;
+
+#ifndef AST_CODEGEN
+#define AST_CODEGEN
 
 namespace codegen {
     template<typename T>
@@ -236,7 +236,7 @@ namespace codegen {
     using IndexFunction = Function<IndexName>;
     using IndexStatement = Statement<IndexName>;
     using IndexExpression = Expression<IndexName>;
-
+    
     StringAST to_cpp_ast(program_t);
 }
 

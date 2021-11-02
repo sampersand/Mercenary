@@ -10,9 +10,9 @@ extern "C" {
 using namespace codegen;
 
 std::monostate panic() {
-	volatile int *p = NULL;
-	*p = 1;
-	return std::monostate {};
+    volatile int *p = NULL;
+    *p = 1;
+    return std::monostate {};
 }
 
 string parseHex(const string& s) {

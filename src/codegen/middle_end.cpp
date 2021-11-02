@@ -130,12 +130,14 @@ vector<IndexStatement> debify_statements(
                         content: debify_expression(d.content, imap),
                     };
                 } else if constexpr (std::is_same_v<T, VariableDeclaration<string>>) {
-                    i += 1;
+                    uint64_t current = i;
+                    
                     std::unordered_map<string, uint64_t> new_imap = imap;
-                    new_imap[d.identifier] = i;
+                    new_imap[d.identifier] = current;
+                    i += 1;
 
                     return VariableDeclaration<IndexName> {
-                        identifier: i,
+                        identifier: current,
                         content: debify_expression(d.content, imap),
                     };
                 } else if constexpr (std::is_same_v<T, Do<string>>) {
