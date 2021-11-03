@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <iterator>
+#include <sstream>
 #include <tuple>
 
 #include "instructions.hpp"
@@ -331,9 +333,86 @@ Instructions instructionify(const IndexAST& iast) {
     return ins;
 }
 
-string intruction_to_string(const Instruction& ins) {
-    
+string instruction_to_string(const Instruction& in) {
+    return std::visit([](auto& in) -> string {
+        using T = std::decay_t<decltype(in)>;
+        if constexpr (std::is_same_v<T, IImport>) {
+            return "Import";
+        } else if constexpr (std::is_same_v<T, IFunc>) {
+            std::ostringstream out;
+            out << "IFunc parm_count=" << in.parm_count.value << " ident=" << in.ident.value;
+            return out.str();
+        } else if constexpr (std::is_same_v<T, StartBlock>) {
+            return "StartBlock";
+        } else if constexpr (std::is_same_v<T, EndBlock>) {
+            return "EndBlock";
+        } else if constexpr (std::is_same_v<T, IReturn>) {
+            return "IReturn";
+        } else if constexpr (std::is_same_v<T, CallKnown>) {
+            std::ostringstream out;
+            out << "CallKnown arg_count=" << in.arg_count.value << " ident=" << in.ident.value;
+            return out.str();
+        } else if constexpr (std::is_same_v<T, CallUnknown>) {
+            return "CallUnknown";
+        } else if constexpr (std::is_same_v<T, NullConst>) {
+            return "NullConst";
+        } else if constexpr (std::is_same_v<T, BooleanConst>) {
+            std::ostringstream out;
+            out << "BooleanConst value=" << in.value;
+            return out.str();
+        } else if constexpr (std::is_same_v<T, IntegerConst>) {
+            std::ostringstream out;
+            out << "IntegerConst value=" << in.value;
+            return out.str();
+        } else if constexpr (std::is_same_v<T, StringConst>) {
+            std::ostringstream out;
+            out  << "StringConst value=" << in.value;
+            return out.str();
+        } else if constexpr (std::is_same_v<T, ListConst>) {
+            std::ostringstream out;
+            out << "ListConst length=" << in.value;
+            return out.str();
+        } else if constexpr (std::is_same_v<T, GetLocal>) {
+            std::ostringstream out;
+            out << "GetLocal $" << in.index.value;
+            return out.str();
+        } else if constexpr (std::is_same_v<T, SetLocal>) {
+            std::ostringstream out;
+            out << "SetLocal $" << in.index.value;
+            return out.str();
+        } else if constexpr (std::is_same_v<T, Drop>) {
+            return "Drop";
+        } else if constexpr (std::is_same_v<T, IIf>) {
+            return "IIf";
+        } else if constexpr (std::is_same_v<T, Loop>) {
+            return "Loop";
+        } else if constexpr (std::is_same_v<T, BreakIf>) {
+            return "BreakIf";
+        } else if constexpr (std::is_same_v<T, IGlobal>) {
+            return "IGlobal";
+        } else if constexpr (std::is_same_v<T, GetFree>) {
+            return "GetFree";
+        } else if constexpr (std::is_same_v<T, SetFree>) {
+            return "SetFree";
+        } else {
+            static_assert(always_false_v<T>, "non-exhaustive visitor!");
+        }
+    }, in);
 }
+
 string intructions_to_string(const Instructions& ins) {
-    
+    vector<string> str_ins = {};
+
+    std::transform(ins.begin(), ins.end(), std::back_inserter(str_ins),
+        [&](auto& in) -> string {
+            return instruction_to_string(in);
+        });
+
+    const char* const delim = "\n";
+
+    std::ostringstream imploded;
+    std::copy(str_ins.begin(), str_ins.end(),
+            std::ostream_iterator<std::string>(imploded, delim));
+
+    return imploded.str();
 }
