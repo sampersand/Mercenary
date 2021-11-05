@@ -211,6 +211,21 @@ Instructions insify_if(
     }
 }
 
+Instructions insify_indexes(const vector<IndexExpression>& dexes) {
+    Instructions ins = {};
+
+    for (auto iter = dexes.begin(); iter != std::prev(dexes.end()); ++iter) {
+        Instructions ie_ins = insify_expression(*iter);
+        ins.insert(ie_ins.end(), ie_ins.begin(), ie_ins.end());
+        ins.push_back(CallKnown { arg_count: make_arity(2), ident: make_iident("~[]") });
+    }
+
+    Instructions last_ins = insify_expression(dexes[dexes.size() - 1]);
+    ins.insert(last_ins.end(), last_ins.begin(), last_ins.end());
+
+    return ins;
+}
+
 Instructions insify_statement(const IndexStatement& s) {
     return std::visit([](auto& s) -> Instructions {
         using T = std::decay_t<decltype(s)>;
@@ -240,32 +255,48 @@ Instructions insify_statement(const IndexStatement& s) {
             ins.push_back(IReturn {});
             return ins;
         } else if constexpr (std::is_same_v<T, Assignment<IndexName>>) {;
-            Instructions ins = std::visit([](auto& id) -> Instructions {
+            return std::visit([&](auto& id) -> Instructions {
                 using T = std::decay_t<decltype(id)>;
                 if constexpr (std::is_same_v<T, uint64_t>) {
-                    return {GetLocal { index: make_index(id) }};
+                    Instructions ins = {};
+                    Instructions con_ins = insify_expression(s.content);
+                    ins.insert(con_ins.end(), con_ins.begin(), con_ins.end());
+
+                    if (s.indexes.size() > 0) {
+                        ins.push_back(GetLocal { index: make_index(id) });
+                        Instructions dexes_ins = insify_indexes(s.indexes);
+                        ins.insert(dexes_ins.end(), dexes_ins.begin(), dexes_ins.end());
+
+                        ins.push_back(CallKnown { arg_count: make_arity(3), ident: make_iident("==[]") });      
+                        return ins;
+                    } else {
+                        ins.push_back(SetLocal { index: make_index(id) });
+                        return ins;
+                    };
                 } else if constexpr (std::is_same_v<T, string>) {
-                    return {StringConst { value: new string(id) }, GetFree {}};
+                    Instructions ins = {};
+                    Instructions con_ins = insify_expression(s.content);
+                    ins.insert(con_ins.end(), con_ins.begin(), con_ins.end());
+
+                    if (s.indexes.size() > 0) {
+                        ins.push_back(StringConst { value: new string(id) });
+                        ins.push_back(GetFree {});
+
+                        Instructions dexes_ins = insify_indexes(s.indexes);
+                        ins.insert(dexes_ins.end(), dexes_ins.begin(), dexes_ins.end());
+
+                        ins.push_back(CallKnown { arg_count: make_arity(3), ident: make_iident("==[]") });      
+
+                        return ins;
+                    } else {
+                        ins.push_back(StringConst { value: new string(id) });
+                        ins.push_back(SetFree {});
+                        return ins;
+                    };
                 } else {
                     static_assert(always_false_v<T>, "non-exhaustive visitor!");
                 }
             }, s.identifier);
-
-            for (auto iter = s.indexes.begin(); iter != std::prev(s.indexes.end()); ++iter) {
-                Instructions ie_ins = insify_expression(*iter);
-                ins.insert(ie_ins.end(), ie_ins.begin(), ie_ins.end());
-                ins.push_back(CallKnown { arg_count: make_arity(2), ident: make_iident("~[]") });
-            }
-
-            Instructions last_ins = insify_expression(s.indexes[s.indexes.size() - 1]);
-            ins.insert(last_ins.end(), last_ins.begin(), last_ins.end());
-
-            Instructions con_ins = insify_expression(s.content);
-            ins.insert(con_ins.end(), con_ins.begin(), con_ins.end());
-
-            ins.push_back(CallKnown { arg_count: make_arity(3), ident: make_iident("==[]") });      
-
-            return ins;
         } else if constexpr (std::is_same_v<T, VariableDeclaration<IndexName>>) {
             Instructions ins = {};
 
