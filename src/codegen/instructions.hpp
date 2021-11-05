@@ -142,7 +142,7 @@ namespace codegen {
      */
 
     // ~[] : [list, int] -> any
-    // ==[] : [list, int, any] -> []
+    // ==[] : [any, list, int] -> []
 
     /*
      * Aliases
