@@ -106,11 +106,16 @@ string unescape(const string& s) {
     return output;
 }
 
-string to_cpp_str(string_t str) {
+string to_cpp_str(string_t str, bool is_lit = false) {
     char new_str[str.len];
     sprintf(new_str, "%2$.*1$s", str.len, str.s);
     string new_cpp = new_str;
-    return new_cpp;
+
+    if (is_lit) {
+        return new_cpp.substr(1, new_cpp.size() - 2);
+    } else {
+        return new_cpp;
+    }
 }
 
 BinaryFlavor to_cpp_binary(binop_t binary_op_c) {
@@ -238,7 +243,7 @@ StringExpression to_cpp_expression(expr_t* expr_c) {
         break;
 
     case expr::EXPR_STRING:
-        return StringLiteral { value: unescape(to_cpp_str(expr_c->value.string)) };
+        return StringLiteral { value: unescape(to_cpp_str(expr_c->value.string, true)) };
         break;
 
     case expr::EXPR_IDENT:
@@ -288,9 +293,19 @@ StringStatement to_cpp_statement(stmt_t* stmt_c) {
             });
         }
 
+        std::optional<vector<StringStatement>> body = stmt_c->value.if_stmt.else_block == NULL ? 
+            std::nullopt
+            : std::optional<vector<StringStatement>>(to_cpp_body(&stmt_c->value.if_stmt.else_block));
+
+        if (stmt_c->value.if_stmt.else_block != NULL) {
+        }
+
         return If<string> {
             if_pairs: if_pairs,
-            else_body: to_cpp_body(&stmt_c->value.if_stmt.else_block),
+            else_body: body,
+        };
+        return Do<string> {
+            content: NullLiteral {},
         };
         break;
     }

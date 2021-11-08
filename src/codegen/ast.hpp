@@ -5,6 +5,7 @@ extern "C"
     #include "../parser/ast.h"
 }
 
+#include <optional>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -196,7 +197,7 @@ namespace codegen {
     template<typename T>
     struct If {
         vector<std::tuple<Expression<T>, vector<Statement<T>>>> if_pairs;
-        vector<Statement<T>> else_body;
+        std::optional<vector<Statement<T>>> else_body;
     };
 
     struct Import {

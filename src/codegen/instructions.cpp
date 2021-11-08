@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <iterator>
+#include <optional>
 #include <sstream>
 #include <tuple>
 
@@ -180,10 +181,14 @@ Instructions insify_statements(const vector<IndexStatement>& s);
 
 Instructions insify_if(
     const vector<std::tuple<Expression<IndexName>, vector<Statement<IndexName>>>>& pairs,
-    const vector<Statement<IndexName>>& else_body)
+    const std::optional<vector<Statement<IndexName>>>& else_body)
 {
     if (pairs.size() == 0) {
-        return insify_statements(else_body);
+        if (const auto body = else_body; body) {
+            return insify_statements(*body);
+        } else {
+            return {};
+        }
     } else {
         Instructions ins = {};
         Instructions cond = insify_expression(std::get<0>(pairs[0]));
@@ -400,7 +405,7 @@ namespace codegen {
                 return "    NullConst";
             } else if constexpr (std::is_same_v<T, BooleanConst>) {
                 std::ostringstream out;
-                out << "    BooleanConst value=" << in.value;
+                out << std::boolalpha << "    BooleanConst value=" << in.value;
                 return out.str();
             } else if constexpr (std::is_same_v<T, IntegerConst>) {
                 std::ostringstream out;

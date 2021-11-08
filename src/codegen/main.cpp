@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    pp_program(program);
+    //pp_program(program);
 
     const StringAST ast = to_cpp_ast(&program);
 

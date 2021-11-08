@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #include <algorithm>
+#include <optional>
 #include <unordered_map>
 
 #include "ast.hpp"
@@ -14,9 +15,9 @@ IndexName find_or_ident(const std::unordered_map<string, uint64_t>& imap, const 
     std::unordered_map<string, uint64_t>::const_iterator got = imap.find(key);
 
     if (got == imap.end()) {
-        return got->second;
-    } else {
         return key;
+    } else {
+        return got->second;
     }
 }
 
@@ -84,7 +85,7 @@ IndexExpression debify_expression(const StringExpression& e, const std::unordere
 vector<IndexStatement> debify_statements(
     const vector<StringStatement>& s,
     uint64_t i,
-    const std::unordered_map<string, uint64_t>& imap
+    std::unordered_map<string, uint64_t>& imap
 ) {
     std::vector<IndexStatement> new_stats = {};
 
@@ -92,31 +93,42 @@ vector<IndexStatement> debify_statements(
             return std::visit([&](auto& d) -> IndexStatement {
                 using T = std::decay_t<decltype(d)>;
                 if constexpr (std::is_same_v<T, If<string>>) {
+                    std::unordered_map<string, uint64_t> temp_imap = imap;
+
                     vector<std::tuple<Expression<IndexName>, vector<Statement<IndexName>>>> new_pairs = {};
 
                     std::transform(d.if_pairs.begin(), d.if_pairs.end(), std::back_inserter(new_pairs),
                         [&](auto& d) -> std::tuple<Expression<IndexName>, vector<Statement<IndexName>>> {
                             return std::tuple<Expression<IndexName>, vector<Statement<IndexName>>>(
-                                debify_expression(std::get<0>(d), imap),
-                                debify_statements(std::get<1>(d), i, imap)
+                                debify_expression(std::get<0>(d), temp_imap),
+                                debify_statements(std::get<1>(d), i, temp_imap)
                             );
                         });
 
-                    return If<IndexName> {
-                        if_pairs: new_pairs,
-                        else_body: debify_statements(d.else_body, i, imap),
-                    };
+                    if (auto body = d.else_body; body) {
+                        return If<IndexName> {
+                            if_pairs: new_pairs,
+                            else_body: debify_statements(*body, i, temp_imap),
+                        };
+                    } else {
+                        return If<IndexName> {
+                            if_pairs: new_pairs,
+                            else_body: std::nullopt,
+                        };
+                    }
+
+
                 } else if constexpr (std::is_same_v<T, While<string>>) {
+                    std::unordered_map<string, uint64_t> temp_imap = imap;
                     return While<IndexName> {
-                        condition: debify_expression(d.condition, imap),
-                        body: debify_statements(d.body, i, imap),
+                        condition: debify_expression(d.condition, temp_imap),
+                        body: debify_statements(d.body, i, temp_imap),
                     };
                 } else if constexpr (std::is_same_v<T, Return<string>>) {
                     return Return<IndexName> {
                         content: debify_expression(d.content, imap),
                     };
                 } else if constexpr (std::is_same_v<T, Assignment<string>>) {
-                    std::unordered_map<string, uint64_t> new_imap = imap;
                     vector<Expression<IndexName>> new_exps = {};
 
                     std::transform(d.indexes.begin(), d.indexes.end(), std::back_inserter(new_exps),
@@ -132,13 +144,13 @@ vector<IndexStatement> debify_statements(
                 } else if constexpr (std::is_same_v<T, VariableDeclaration<string>>) {
                     uint64_t current = i;
                     
-                    std::unordered_map<string, uint64_t> new_imap = imap;
-                    new_imap[d.identifier] = current;
+                    std::unordered_map<string, uint64_t> old_imap = imap;
+                    imap[d.identifier] = current;
                     i += 1;
 
                     return VariableDeclaration<IndexName> {
                         identifier: current,
-                        content: debify_expression(d.content, imap),
+                        content: debify_expression(d.content, old_imap),
                     };
                 } else if constexpr (std::is_same_v<T, Do<string>>) {
                     return Do<IndexName> {
