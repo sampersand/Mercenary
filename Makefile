@@ -13,16 +13,19 @@ CXXFLAGS ?= -std=c++2a
 ifeq ($(ASAN),1)
 	LDFLAGS += -fsanitize=address
 	CFLAGS += -fsanitize=address
+	CXXFLAGS += -fsanitize=undefined
 endif
 
 ifeq ($(UBSAN),1)
 	LDFLAGS += -fsanitize=undefined
 	CFLAGS += -fsanitize=undefined
+	CXXFLAGS += -fsanitize=undefined
 endif
 
 ifeq ($(DEBUG),1)
 	CFLAGS += -g
 	ASMFLAGS += -g
+	CXXFLAGS += -g
 endif
 
 parser_objs = src/parser/ast-free.o src/parser/ast-visit.o src/parser/ast.o src/parser/pp.o src/parser/parser.o

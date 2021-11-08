@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 extern "C" {
     #include "../parser/ast.h"
     #include "../parser/dyn_array.h"
@@ -104,9 +106,11 @@ string unescape(const string& s) {
     return output;
 }
 
-string to_cpp_str(string_t string_t_c) {
-    string global_name = string_t_c.s;
-    return global_name;
+string to_cpp_str(string_t str) {
+    char new_str[str.len];
+    sprintf(new_str, "%2$.*1$s", str.len, str.s);
+    string new_cpp = new_str;
+    return new_cpp;
 }
 
 BinaryFlavor to_cpp_binary(binop_t binary_op_c) {
@@ -363,30 +367,32 @@ StringFunction to_cpp_function(fn_decl_t* function_c) {
     };
 }
 
-StringAST to_cpp_ast(program_t* program_c) {
-    vector<StringDeclaration> declarations = {};
+namespace codegen {
+    StringAST to_cpp_ast(program_t* program_c) {
+        vector<StringDeclaration> declarations = {};
 
-    for (size_t i = 0; i < arr_get_size(*program_c); i++) {
-        decl_t declaration_c = arr_at(*program_c, i);
+        for (size_t i = 0; i < arr_get_size(*program_c); i++) {
+            decl_t declaration_c = arr_at(*program_c, i);
 
-        switch (declaration_c.kind) {
-        case decl_t::DECL_FUNCTION:
-            declarations.push_back(to_cpp_function(&declaration_c.value.fn));
-            break;
+            switch (declaration_c.kind) {
+            case decl_t::DECL_FUNCTION:
+                declarations.push_back(to_cpp_function(&declaration_c.value.fn));
+                break;
 
-        case decl_t::DECL_GLOBAL:
-            declarations.push_back(Global { identifier: to_cpp_str(declaration_c.value.string) });
-            break;
+            case decl_t::DECL_GLOBAL:
+                declarations.push_back(Global { identifier: to_cpp_str(declaration_c.value.string) });
+                break;
 
-        case decl_t::DECL_IMPORT:
-            declarations.push_back(Import { path: to_cpp_str(declaration_c.value.string) });
-            break;
-        
-        default: 
-            panic();
-            break;
+            case decl_t::DECL_IMPORT:
+                declarations.push_back(Import { path: to_cpp_str(declaration_c.value.string) });
+                break;
+            
+            default: 
+                panic();
+                break;
+            }
         }
-    }
 
-    return StringAST { declarations: declarations };
+        return StringAST { declarations: declarations };
+    }
 }

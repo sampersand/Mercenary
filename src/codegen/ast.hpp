@@ -237,7 +237,7 @@ namespace codegen {
     using IndexStatement = Statement<IndexName>;
     using IndexExpression = Expression<IndexName>;
     
-    StringAST to_cpp_ast(program_t);
+    StringAST to_cpp_ast(program_t*);
 }
 
 #endif

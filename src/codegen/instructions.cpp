@@ -121,7 +121,7 @@ Instructions insify_expression(const IndexExpression& e) {
             
             for (IndexExpression expr : e.value) {
                 Instructions expr_ins = insify_expression(expr);
-                ins.insert(expr_ins.end(), expr_ins.begin(), expr_ins.end());
+                ins.insert(ins.end(), expr_ins.begin(), expr_ins.end());
             }
 
             ins.push_back(ListConst { value: e.value.size() });
@@ -141,7 +141,7 @@ Instructions insify_expression(const IndexExpression& e) {
             Instructions left = insify_expression(e.left.get());
             Instructions right = insify_expression(e.right.get());
 
-            left.insert(right.end(), right.begin(), right.end());
+            left.insert(left.end(), right.begin(), right.end());
             left.push_back(CallKnown { arg_count: make_arity(2), ident: make_iident(stringify_binop(e.flavor)) });
 
             return left;
@@ -154,7 +154,7 @@ Instructions insify_expression(const IndexExpression& e) {
             Instructions ins = insify_expression(e.list.get());
             Instructions number = insify_expression(e.number.get());
             
-            ins.insert(number.end(), number.begin(), number.end());
+            ins.insert(ins.end(), number.begin(), number.end());
             ins.push_back(CallKnown { arg_count: make_arity(2), ident: make_iident("~[]") });
             return ins;
         } else if constexpr (std::is_same_v<T, Call<IndexName>>) {
@@ -162,11 +162,11 @@ Instructions insify_expression(const IndexExpression& e) {
             
             for (IndexExpression expr : e.args) {
                 Instructions arg_ins = insify_expression(expr);
-                ins.insert(arg_ins.end(), arg_ins.begin(), arg_ins.end());
+                ins.insert(ins.end(), arg_ins.begin(), arg_ins.end());
             }
 
             Instructions name_ins = insify_expression(e.function.get());
-            ins.insert(name_ins.end(), name_ins.begin(), name_ins.end());
+            ins.insert(ins.end(), name_ins.begin(), name_ins.end());
             ins.push_back(CallUnknown { arg_count: make_arity(e.args.size()) });
             return ins;
         } else {
@@ -187,11 +187,11 @@ Instructions insify_if(
     } else {
         Instructions ins = {};
         Instructions cond = insify_expression(std::get<0>(pairs[0]));
-        ins.insert(cond.end(), cond.begin(), cond.end());
+        ins.insert(ins.end(), cond.begin(), cond.end());
 
         ins.push_back(StartBlock {});
         Instructions first_body = insify_statements(std::get<1>(pairs[0]));
-        ins.insert(first_body.end(), first_body.begin(), first_body.end());
+        ins.insert(ins.end(), first_body.begin(), first_body.end());
         ins.push_back(EndBlock {});
 
         ins.push_back(StartBlock {});
@@ -202,7 +202,7 @@ Instructions insify_if(
             ),
             else_body
         );
-        ins.insert(rest_body.end(), rest_body.begin(), rest_body.end());
+        ins.insert(ins.end(), rest_body.begin(), rest_body.end());
         ins.push_back(EndBlock {});
         
         ins.push_back(IIf {});
@@ -216,12 +216,12 @@ Instructions insify_indexes(const vector<IndexExpression>& dexes) {
 
     for (auto iter = dexes.begin(); iter != std::prev(dexes.end()); ++iter) {
         Instructions ie_ins = insify_expression(*iter);
-        ins.insert(ie_ins.end(), ie_ins.begin(), ie_ins.end());
+        ins.insert(ins.end(), ie_ins.begin(), ie_ins.end());
         ins.push_back(CallKnown { arg_count: make_arity(2), ident: make_iident("~[]") });
     }
 
     Instructions last_ins = insify_expression(dexes[dexes.size() - 1]);
-    ins.insert(last_ins.end(), last_ins.begin(), last_ins.end());
+    ins.insert(ins.end(), last_ins.begin(), last_ins.end());
 
     return ins;
 }
@@ -236,12 +236,12 @@ Instructions insify_statement(const IndexStatement& s) {
             ins.push_back(StartBlock {});
 
             Instructions cond_ins = insify_expression(s.condition);
-            ins.insert(cond_ins.end(), cond_ins.begin(), cond_ins.end());
+            ins.insert(ins.end(), cond_ins.begin(), cond_ins.end());
 
             ins.push_back(BreakIf {});
 
             Instructions body_ins = insify_statements(s.body);
-            ins.insert(body_ins.end(), body_ins.begin(), body_ins.end());
+            ins.insert(ins.end(), body_ins.begin(), body_ins.end());
 
             ins.push_back(EndBlock {});
             ins.push_back(Loop {});
@@ -250,7 +250,7 @@ Instructions insify_statement(const IndexStatement& s) {
             Instructions ins = {};
 
             Instructions expr_ins = insify_expression(s.content);
-            ins.insert(expr_ins.end(), expr_ins.begin(), expr_ins.end());
+            ins.insert(ins.end(), expr_ins.begin(), expr_ins.end());
 
             ins.push_back(IReturn {});
             return ins;
@@ -260,12 +260,12 @@ Instructions insify_statement(const IndexStatement& s) {
                 if constexpr (std::is_same_v<T, uint64_t>) {
                     Instructions ins = {};
                     Instructions con_ins = insify_expression(s.content);
-                    ins.insert(con_ins.end(), con_ins.begin(), con_ins.end());
+                    ins.insert(ins.end(), con_ins.begin(), con_ins.end());
 
                     if (s.indexes.size() > 0) {
                         ins.push_back(GetLocal { index: make_index(id) });
                         Instructions dexes_ins = insify_indexes(s.indexes);
-                        ins.insert(dexes_ins.end(), dexes_ins.begin(), dexes_ins.end());
+                        ins.insert(ins.end(), dexes_ins.begin(), dexes_ins.end());
 
                         ins.push_back(CallKnown { arg_count: make_arity(3), ident: make_iident("==[]") });      
                         return ins;
@@ -276,14 +276,14 @@ Instructions insify_statement(const IndexStatement& s) {
                 } else if constexpr (std::is_same_v<T, string>) {
                     Instructions ins = {};
                     Instructions con_ins = insify_expression(s.content);
-                    ins.insert(con_ins.end(), con_ins.begin(), con_ins.end());
+                    ins.insert(ins.end(), con_ins.begin(), con_ins.end());
 
                     if (s.indexes.size() > 0) {
                         ins.push_back(StringConst { value: new string(id) });
                         ins.push_back(GetFree {});
 
                         Instructions dexes_ins = insify_indexes(s.indexes);
-                        ins.insert(dexes_ins.end(), dexes_ins.begin(), dexes_ins.end());
+                        ins.insert(ins.end(), dexes_ins.begin(), dexes_ins.end());
 
                         ins.push_back(CallKnown { arg_count: make_arity(3), ident: make_iident("==[]") });      
 
@@ -301,7 +301,7 @@ Instructions insify_statement(const IndexStatement& s) {
             Instructions ins = {};
 
             Instructions expr_ins = insify_expression(s.content);
-            ins.insert(expr_ins.end(), expr_ins.begin(), expr_ins.end());
+            ins.insert(ins.end(), expr_ins.begin(), expr_ins.end());
 
             ins.push_back(SetLocal { index: make_index(std::get<uint64_t>(s.identifier)) });
 
@@ -310,7 +310,7 @@ Instructions insify_statement(const IndexStatement& s) {
             Instructions ins = {};
 
             Instructions expr_ins = insify_expression(s.content);
-            ins.insert(expr_ins.end(), expr_ins.begin(), expr_ins.end());
+            ins.insert(ins.end(), expr_ins.begin(), expr_ins.end());
 
             ins.push_back(Drop {});
             return ins;
@@ -325,7 +325,7 @@ Instructions insify_statements(const vector<IndexStatement>& s) {
 
     for (IndexStatement stmt : s) {
         Instructions stmt_ins = insify_statement(stmt);
-        ins.insert(stmt_ins.end(), stmt_ins.begin(), stmt_ins.end());
+        ins.insert(ins.end(), stmt_ins.begin(), stmt_ins.end());
     }
 
     return ins;
@@ -342,7 +342,17 @@ Instructions insify_declaration(const IndexDeclaration& d) {
             Instructions ins = {StartBlock {}};
 
             Instructions body_ins = insify_statements(d.body);
-            ins.insert(body_ins.end(), body_ins.begin(), body_ins.end());
+            ins.insert(ins.end(), body_ins.begin(), body_ins.end());
+
+            // Add a exit to the main function
+            if (d.identifier == "main") {
+                ins.push_back(IntegerConst { value: 0 });
+                ins.push_back(CallKnown { arg_count: make_arity(1), ident: make_iident("exit") });
+            }
+
+            // Return null if nothing else has yet
+            ins.push_back(NullConst {});
+            ins.push_back(IReturn {});
 
             ins.push_back(EndBlock {});
             ins.push_back(IFunc { parm_count: make_arity(d.parms.size()), ident: make_iident(d.identifier) });
@@ -359,7 +369,7 @@ namespace codegen {
     
         for (IndexDeclaration dec : iast.declarations) {
             Instructions dec_ins = insify_declaration(dec);
-            ins.insert(dec_ins.end(), dec_ins.begin(), dec_ins.end());
+            ins.insert(ins.end(), dec_ins.begin(), dec_ins.end());
         }
     
         return ins;
@@ -372,60 +382,60 @@ namespace codegen {
                 return "Import";
             } else if constexpr (std::is_same_v<T, IFunc>) {
                 std::ostringstream out;
-                out << "IFunc parm_count=" << in.parm_count.value << " ident=" << in.ident.value;
+                out << "IFunc parm_count=" << in.parm_count.value << " ident=" << *(in.ident.value);
                 return out.str();
             } else if constexpr (std::is_same_v<T, StartBlock>) {
                 return "StartBlock";
             } else if constexpr (std::is_same_v<T, EndBlock>) {
                 return "EndBlock";
             } else if constexpr (std::is_same_v<T, IReturn>) {
-                return "IReturn";
+                return "    IReturn";
             } else if constexpr (std::is_same_v<T, CallKnown>) {
                 std::ostringstream out;
-                out << "CallKnown arg_count=" << in.arg_count.value << " ident=" << in.ident.value;
+                out << "    CallKnown arg_count=" << in.arg_count.value << " ident=" << *(in.ident.value);
                 return out.str();
             } else if constexpr (std::is_same_v<T, CallUnknown>) {
-                return "CallUnknown";
+                return "    CallUnknown";
             } else if constexpr (std::is_same_v<T, NullConst>) {
-                return "NullConst";
+                return "    NullConst";
             } else if constexpr (std::is_same_v<T, BooleanConst>) {
                 std::ostringstream out;
-                out << "BooleanConst value=" << in.value;
+                out << "    BooleanConst value=" << in.value;
                 return out.str();
             } else if constexpr (std::is_same_v<T, IntegerConst>) {
                 std::ostringstream out;
-                out << "IntegerConst value=" << in.value;
+                out << "    IntegerConst value=" << in.value;
                 return out.str();
             } else if constexpr (std::is_same_v<T, StringConst>) {
                 std::ostringstream out;
-                out  << "StringConst value=" << in.value;
+                out  << "    StringConst value=\"" << *(in.value) << "\"";
                 return out.str();
             } else if constexpr (std::is_same_v<T, ListConst>) {
                 std::ostringstream out;
-                out << "ListConst length=" << in.value;
+                out << "    ListConst length=" << in.value;
                 return out.str();
             } else if constexpr (std::is_same_v<T, GetLocal>) {
                 std::ostringstream out;
-                out << "GetLocal $" << in.index.value;
+                out << "    GetLocal $" << in.index.value;
                 return out.str();
             } else if constexpr (std::is_same_v<T, SetLocal>) {
                 std::ostringstream out;
-                out << "SetLocal $" << in.index.value;
+                out << "    SetLocal $" << in.index.value;
                 return out.str();
             } else if constexpr (std::is_same_v<T, Drop>) {
-                return "Drop";
+                return "    Drop";
             } else if constexpr (std::is_same_v<T, IIf>) {
-                return "IIf";
+                return "    IIf";
             } else if constexpr (std::is_same_v<T, Loop>) {
-                return "Loop";
+                return "    Loop";
             } else if constexpr (std::is_same_v<T, BreakIf>) {
-                return "BreakIf";
+                return "    BreakIf";
             } else if constexpr (std::is_same_v<T, IGlobal>) {
                 return "IGlobal";
             } else if constexpr (std::is_same_v<T, GetFree>) {
-                return "GetFree";
+                return "    GetFree";
             } else if constexpr (std::is_same_v<T, SetFree>) {
-                return "SetFree";
+                return "    SetFree";
             } else {
                 static_assert(always_false_v<T>, "non-exhaustive visitor!");
             }

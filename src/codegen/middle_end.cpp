@@ -148,7 +148,7 @@ vector<IndexStatement> debify_statements(
                     static_assert(always_false_v<T>, "non-exhaustive visitor!");
                 }
             }, d);
-        });    
+        });
 
     return new_stats;
 }
@@ -176,24 +176,28 @@ IndexFunction debify_function(const StringFunction& f) {
 IndexDeclaration debify_declaration(const StringDeclaration& d) {
     return std::visit([](auto& d) -> IndexDeclaration {
         using T = std::decay_t<decltype(d)>;
-        if constexpr (std::is_same_v<T, Import>)
+        if constexpr (std::is_same_v<T, Import>) {
             return d;
-        else if constexpr (std::is_same_v<T, Global>)
+        } else if constexpr (std::is_same_v<T, Global>) {
             return d;
-        else if constexpr (std::is_same_v<T, StringFunction>)
+        } else if constexpr (std::is_same_v<T, StringFunction>) {
             return debify_function(d);
-        else 
+        } else { 
             static_assert(always_false_v<T>, "non-exhaustive visitor!");
+        }
     }, d);
 }
 
-IndexAST de_bruijnify(const StringAST& sast) {
-    std::vector<IndexDeclaration> new_decs = {};
 
-    std::transform(sast.declarations.begin(), sast.declarations.end(), std::back_inserter(new_decs),
-        [](const StringDeclaration& d) -> IndexDeclaration { return debify_declaration(d); });
+namespace codegen {
+    IndexAST de_bruijnify(const StringAST& sast) {
+        std::vector<IndexDeclaration> new_decs = {};
 
-    return AST<IndexName> {
-        declarations: new_decs,
-    };
+        std::transform(sast.declarations.begin(), sast.declarations.end(), std::back_inserter(new_decs),
+            [](const StringDeclaration& d) -> IndexDeclaration { return debify_declaration(d); });
+
+        return AST<IndexName> {
+            declarations: new_decs,
+        };
+    }
 }
