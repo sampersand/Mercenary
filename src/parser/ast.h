@@ -25,21 +25,21 @@ typedef struct expr expr_t;
 
 arr_forward_decl(expr_array_t)
 
-    typedef enum {
-      BINOP_EQ,
-      BINOP_NE,
-      BINOP_GT,
-      BINOP_GE,
-      BINOP_LT,
-      BINOP_LE,
-      BINOP_AND,
-      BINOP_OR,
-      BINOP_ADD,
-      BINOP_SUB,
-      BINOP_MUL,
-      BINOP_DIV,
-      BINOP_REM
-    } binop_t;
+typedef enum {
+  BINOP_EQ,
+  BINOP_NE,
+  BINOP_GT,
+  BINOP_GE,
+  BINOP_LT,
+  BINOP_LE,
+  BINOP_AND,
+  BINOP_OR,
+  BINOP_ADD,
+  BINOP_SUB,
+  BINOP_MUL,
+  BINOP_DIV,
+  BINOP_REM
+} binop_t;
 
 typedef struct {
   expr_t* lhs;
@@ -102,13 +102,13 @@ arr_decl(expr_array_t, expr_t)
 
     /* === STATEMENTS === */
 
-    arr_forward_decl(stmt_array_t)
+arr_forward_decl(stmt_array_t)
 
-        typedef stmt_array_t block_t;
+typedef stmt_array_t block_t;
 
 arr_forward_decl(block_array_t)
 
-    typedef struct {
+typedef struct {
   expr_t* main_cond;
   block_t main_block;
   // length must be same of elif_conds and elif_blocks
@@ -163,7 +163,7 @@ arr_decl(stmt_array_t, stmt_t) arr_decl(block_array_t, block_t)
 
     /* === DECLARATIONS === */
 
-    typedef struct {
+typedef struct {
   string_t name;
   string_array_t args;
   block_t block;
@@ -181,7 +181,7 @@ typedef struct {
 
 arr_forward_decl(decl_array_t) arr_decl(decl_array_t, decl_t)
 
-    typedef decl_array_t program_t;
+typedef decl_array_t program_t;
 
 // Make a string from a char* with a given length.
 string_t mk_string(const char* s, uint32_t len);

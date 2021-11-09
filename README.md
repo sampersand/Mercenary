@@ -16,3 +16,7 @@ The following lovely people contributed to the original project:
 - (Maybe?) Preprocessor
 - <others?>
 
+## Setup
+
+ - Install https://www.nasm.us/
+ - Run `make` 
