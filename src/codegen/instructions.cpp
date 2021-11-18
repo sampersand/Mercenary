@@ -250,7 +250,7 @@ Instructions insify_statement(const IndexStatement& s) {
 
             ins.push_back(EndBlock {});
             ins.push_back(Loop {});
-            return {};
+            return ins;
         } else if constexpr (std::is_same_v<T, Return<IndexName>>) {
             Instructions ins = {};
 
