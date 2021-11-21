@@ -143,9 +143,9 @@ read_symbol:
 	je .double_equals
 	cmp word [rdx], '!='
 	je .not_equals
-	cmp word [rdx], '<='
-	je .greater_equals
 	cmp word [rdx], '>='
+	je .greater_equals
+	cmp word [rdx], '<='
 	je .lesser_equals
 	cmp word [rdx], '/*'
 	je read_comment
