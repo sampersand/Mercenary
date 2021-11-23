@@ -2,9 +2,20 @@ CC ?= cc
 CFLAGS ?= -O2
 # CFLAGS += -Isrc/parser -Isrc/lexer
 LDFLAGS += -no-pie
-# Change to macho64 on Mac, win64 on Windows
-# (I don't know how to do conditionals like this in GNU Make, sorry)
-NASM_FORMAT ?= elf64
+
+ifeq ($(OS),Windows_NT)
+    # Use win64 for Windows only
+    NASM_FORMAT = win64
+else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Darwin)
+    	# Use macho64 for Darwin only
+	NASM_FORMAT = macho64
+    else
+    	# Use elf64 for everything else
+    	NASM_FORMAT = elf64
+    endif
+endif
 
 CXX ?= g++
 LDLIBS ?= -lstdc++ -lm
