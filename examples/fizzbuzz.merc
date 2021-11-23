@@ -23,10 +23,12 @@ function fizzbuzz(n) {
 }
 
 function main(argv) {
+	let result = null;
+
 	if (length(argv) == 2) {
-		let result = fizzbuzz(atoi(argv[1]));
+		set result = fizzbuzz(atoi(argv[1]));
 	} else {
-		let result = fizzbuzz(100);
+		set result = fizzbuzz(100);
 	}
 
 	let i = 0;
