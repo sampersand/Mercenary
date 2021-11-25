@@ -121,7 +121,7 @@ string to_cpp_str(string_t str, bool is_lit = false) {
 BinaryFlavor to_cpp_binary(binop_t binary_op_c) {
     switch (binary_op_c) {
         case binop_t::BINOP_EQ:
-            return BinaryFlavor::NotEqual;
+            return BinaryFlavor::Equal;
             break;
         
         case binop_t::BINOP_NE:
