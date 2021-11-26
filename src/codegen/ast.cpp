@@ -8,6 +8,7 @@ extern "C" {
 #include "ast.hpp"
 
 #include <set>
+#include <iostream>
 
 using namespace codegen;
 
@@ -106,16 +107,11 @@ string unescape(const string& s) {
     return output;
 }
 
-string to_cpp_str(string_t str, bool is_lit = false) {
+string to_cpp_str(string_t str) {
     char new_str[str.len];
     sprintf(new_str, "%2$.*1$s", str.len, str.s);
     string new_cpp = new_str;
-
-    if (is_lit) {
-        return new_cpp.substr(1, new_cpp.size() - 2);
-    } else {
-        return new_cpp;
-    }
+    return new_cpp;
 }
 
 BinaryFlavor to_cpp_binary(binop_t binary_op_c) {
@@ -197,78 +193,88 @@ UnaryFlavor to_cpp_unary(unop_t unary_op_c) {
 
 StringExpression to_cpp_expression(expr_t* expr_c) {
     switch (expr_c->kind) {
-    case expr::EXPR_BINARY:
-        return BinaryOperation<string> {
-            left: make_gross<StringExpression>(to_cpp_expression(expr_c->value.binary.lhs)),
-            flavor: to_cpp_binary(expr_c->value.binary.op),
-            right: make_gross<StringExpression>(to_cpp_expression(expr_c->value.binary.rhs)),
-        };
-        break;
+        case expr::EXPR_BINARY:
+            return BinaryOperation<string> {
+                left: make_gross<StringExpression>(to_cpp_expression(expr_c->value.binary.lhs)),
+                flavor: to_cpp_binary(expr_c->value.binary.op),
+                right: make_gross<StringExpression>(to_cpp_expression(expr_c->value.binary.rhs)),
+            };
+            break;
 
-    case expr::EXPR_UNARY:
-        return UnaryOperation<string> {
-            flavor: to_cpp_unary(expr_c->value.unary.op),
-            content: make_gross<StringExpression>(to_cpp_expression(expr_c->value.unary.subexpr)),
-        };
-        break;
+        case expr::EXPR_UNARY:
+            return UnaryOperation<string> {
+                flavor: to_cpp_unary(expr_c->value.unary.op),
+                content: make_gross<StringExpression>(to_cpp_expression(expr_c->value.unary.subexpr)),
+            };
+            break;
 
-    case expr::EXPR_CALL: {
-        vector<StringExpression> args = {};
+        case expr::EXPR_CALL: {
+            vector<StringExpression> args = {};
 
-        for (size_t i = 0; i < arr_get_size(expr_c->value.call.args); i++) {
-            args.push_back(to_cpp_expression(&arr_at(expr_c->value.call.args, i)));
+            for (size_t i = 0; i < arr_get_size(expr_c->value.call.args); i++) {
+                args.push_back(to_cpp_expression(&arr_at(expr_c->value.call.args, i)));
+            }
+
+            return Call<string> {
+                function: make_gross<StringExpression>(to_cpp_expression(expr_c->value.call.func)),
+                args: args,
+            };
+            break;
         }
 
-        return Call<string> {
-            function: make_gross<StringExpression>(to_cpp_expression(expr_c->value.call.func)),
-            args: args,
-        };
-        break;
-    }
+        case expr::EXPR_INDEX:
+            return Index<string> {
+                list: make_gross<StringExpression>(to_cpp_expression(expr_c->value.index.array)),
+                number: make_gross<StringExpression>(to_cpp_expression(expr_c->value.index.index)),
+            };
+            break;
 
-    case expr::EXPR_INDEX:
-        return Index<string> {
-            list: make_gross<StringExpression>(to_cpp_expression(expr_c->value.index.array)),
-            number: make_gross<StringExpression>(to_cpp_expression(expr_c->value.index.index)),
-        };
-        break;
+        case expr::EXPR_BOOL:
+            return BooleanLiteral { value: expr_c->value.bool_expr};
+            break;
 
-    case expr::EXPR_BOOL:
-        return BooleanLiteral { value: expr_c->value.bool_expr};
-        break;
+        case expr::EXPR_NUMBER:
+            // This cast may not make sense, I'm not sure what the parse is doing?
+            return IntegerLiteral { value: static_cast<int64_t>(expr_c->value.number) };
+            break;
 
-    case expr::EXPR_NUMBER:
-        // This cast may not make sense, I'm not sure what the parse is doing?
-        return IntegerLiteral { value: static_cast<int64_t>(expr_c->value.number) };
-        break;
+        case expr::EXPR_STRING: {
+            string str = to_cpp_str(expr_c->value.string);
+            bool is_escaped = str[0] == '\"';
 
-    case expr::EXPR_STRING:
-        return StringLiteral { value: unescape(to_cpp_str(expr_c->value.string, true)) };
-        break;
+            string stripped = str.substr(1, str.size() - 2);
 
-    case expr::EXPR_IDENT:
-        return Identifier<string> { value: to_cpp_str(expr_c->value.string) };
-        break;
-
-    case expr::EXPR_ARRAY: {
-        vector<StringExpression> args = {};
-
-        for (size_t i = 0; i < arr_get_size(expr_c->value.array); i++) {
-            args.push_back(to_cpp_expression(&arr_at(expr_c->value.array, i)));
+            if (is_escaped) {
+                return StringLiteral { value: unescape(stripped) };
+            } else {
+                return StringLiteral { value: stripped };
+            }
+            break;
         }
 
-        return ListLiteral<string> { value: args };
-        break;
-    }
+        case expr::EXPR_IDENT:
+            return Identifier<string> { value: to_cpp_str(expr_c->value.string) };
+            break;
 
-    case expr::EXPR_NULL:
-        return NullLiteral {};
-        break;
-    
-    default:
-        panic();
-        return NullLiteral {}; // Unreachable, makes the compiler happy
-        break;
+        case expr::EXPR_ARRAY: {
+            vector<StringExpression> args = {};
+
+            for (size_t i = 0; i < arr_get_size(expr_c->value.array); i++) {
+                args.push_back(to_cpp_expression(&arr_at(expr_c->value.array, i)));
+            }
+
+            return ListLiteral<string> { value: args };
+            break;
+        }
+
+        case expr::EXPR_NULL:
+            return NullLiteral {};
+            break;
+        
+        default:
+            panic();
+            return NullLiteral {}; // Unreachable, makes the compiler happy
+            break;
     }
 }
 
@@ -277,84 +283,84 @@ vector<StringStatement> to_cpp_body(block_t*);
 
 StringStatement to_cpp_statement(stmt_t* stmt_c) {
     switch (stmt_c->kind) {
-    case stmt_t::STMT_IF: {
-        if_stmt_t if_c = stmt_c->value.if_stmt;
-        vector<std::tuple<Expression<string>, vector<Statement<string>>>> if_pairs = {};
+        case stmt_t::STMT_IF: {
+            if_stmt_t if_c = stmt_c->value.if_stmt;
+            vector<std::tuple<Expression<string>, vector<Statement<string>>>> if_pairs = {};
 
-        if_pairs.push_back(std::tuple<Expression<string>, vector<Statement<string>>>{
-            to_cpp_expression(if_c.main_cond),
-            to_cpp_body(&if_c.main_block)
-        });
-
-        for (size_t i = 0; i < arr_get_size(if_c.elif_conds); i++) {
             if_pairs.push_back(std::tuple<Expression<string>, vector<Statement<string>>>{
-                to_cpp_expression(&arr_at(if_c.elif_conds, i)),
-                to_cpp_body(&arr_at(if_c.elif_blocks, i))
+                to_cpp_expression(if_c.main_cond),
+                to_cpp_body(&if_c.main_block)
             });
+
+            for (size_t i = 0; i < arr_get_size(if_c.elif_conds); i++) {
+                if_pairs.push_back(std::tuple<Expression<string>, vector<Statement<string>>>{
+                    to_cpp_expression(&arr_at(if_c.elif_conds, i)),
+                    to_cpp_body(&arr_at(if_c.elif_blocks, i))
+                });
+            }
+
+            std::optional<vector<StringStatement>> body = stmt_c->value.if_stmt.else_block == NULL ? 
+                std::nullopt
+                : std::optional<vector<StringStatement>>(to_cpp_body(&stmt_c->value.if_stmt.else_block));
+
+            if (stmt_c->value.if_stmt.else_block != NULL) {
+            }
+
+            return If<string> {
+                if_pairs: if_pairs,
+                else_body: body,
+            };
+            return Do<string> {
+                content: NullLiteral {},
+            };
+            break;
         }
 
-        std::optional<vector<StringStatement>> body = stmt_c->value.if_stmt.else_block == NULL ? 
-            std::nullopt
-            : std::optional<vector<StringStatement>>(to_cpp_body(&stmt_c->value.if_stmt.else_block));
+        case stmt_t::STMT_WHILE:
+            return While<string> {
+                condition: to_cpp_expression(stmt_c->value.while_stmt.cond),
+                body: to_cpp_body(&stmt_c->value.while_stmt.block),
+            };
+            break;
 
-        if (stmt_c->value.if_stmt.else_block != NULL) {
+        case stmt_t::STMT_RETURN:
+            return Return<string> {
+                content: to_cpp_expression(stmt_c->value.expr),
+            };
+            break;
+
+        case stmt_t::STMT_DECLARE_VAR:
+            return VariableDeclaration<string> {
+                identifier: to_cpp_str(stmt_c->value.declare_var.ident),
+                content: to_cpp_expression(stmt_c->value.declare_var.value),
+            };
+            break;
+
+        case stmt_t::STMT_ASSIGN_VAR: {
+            vector<StringExpression> indexes = {};
+
+            for (size_t i = 0; i < arr_get_size(stmt_c->value.assign_var.indices); i++) {
+                indexes.push_back(to_cpp_expression(&arr_at(stmt_c->value.assign_var.indices, i)));
+            }
+
+            return Assignment<string> {
+                identifier: to_cpp_str(stmt_c->value.assign_var.ident),
+                indexes: indexes,
+                content: to_cpp_expression(stmt_c->value.assign_var.value),
+            };
+            break;
         }
 
-        return If<string> {
-            if_pairs: if_pairs,
-            else_body: body,
-        };
-        return Do<string> {
-            content: NullLiteral {},
-        };
-        break;
-    }
+        case stmt_t::STMT_DO:
+            return Do<string> {
+                content: to_cpp_expression(stmt_c->value.expr),
+            };
+            break;
 
-    case stmt_t::STMT_WHILE:
-        return While<string> {
-            condition: to_cpp_expression(stmt_c->value.while_stmt.cond),
-            body: to_cpp_body(&stmt_c->value.while_stmt.block),
-        };
-        break;
-
-    case stmt_t::STMT_RETURN:
-        return Return<string> {
-            content: to_cpp_expression(stmt_c->value.expr),
-        };
-        break;
-
-    case stmt_t::STMT_DECLARE_VAR:
-        return VariableDeclaration<string> {
-            identifier: to_cpp_str(stmt_c->value.declare_var.ident),
-            content: to_cpp_expression(stmt_c->value.declare_var.value),
-        };
-        break;
-
-    case stmt_t::STMT_ASSIGN_VAR: {
-        vector<StringExpression> indexes = {};
-
-        for (size_t i = 0; i < arr_get_size(stmt_c->value.assign_var.indices); i++) {
-            indexes.push_back(to_cpp_expression(&arr_at(stmt_c->value.assign_var.indices, i)));
-        }
-
-        return Assignment<string> {
-            identifier: to_cpp_str(stmt_c->value.assign_var.ident),
-            indexes: indexes,
-            content: to_cpp_expression(stmt_c->value.assign_var.value),
-        };
-        break;
-    }
-
-    case stmt_t::STMT_DO:
-        return Do<string> {
-            content: to_cpp_expression(stmt_c->value.expr),
-        };
-        break;
-
-    default:
-        panic();
-        return Do<string> { content: to_cpp_expression(stmt_c->value.expr) }; // Unreachable, makes the compiler happy 
-        break;
+        default:
+            panic();
+            return Do<string> { content: to_cpp_expression(stmt_c->value.expr) }; // Unreachable, makes the compiler happy 
+            break;
     }
 }
 
@@ -390,21 +396,21 @@ namespace codegen {
             decl_t declaration_c = arr_at(*program_c, i);
 
             switch (declaration_c.kind) {
-            case decl_t::DECL_FUNCTION:
-                declarations.push_back(to_cpp_function(&declaration_c.value.fn));
-                break;
+                case decl_t::DECL_FUNCTION:
+                    declarations.push_back(to_cpp_function(&declaration_c.value.fn));
+                    break;
 
-            case decl_t::DECL_GLOBAL:
-                declarations.push_back(Global { identifier: to_cpp_str(declaration_c.value.string) });
-                break;
+                case decl_t::DECL_GLOBAL:
+                    declarations.push_back(Global { identifier: to_cpp_str(declaration_c.value.string) });
+                    break;
 
-            case decl_t::DECL_IMPORT:
-                declarations.push_back(Import { path: to_cpp_str(declaration_c.value.string) });
-                break;
-            
-            default: 
-                panic();
-                break;
+                case decl_t::DECL_IMPORT:
+                    declarations.push_back(Import { path: to_cpp_str(declaration_c.value.string) });
+                    break;
+                
+                default: 
+                    panic();
+                    break;
             }
         }
 
