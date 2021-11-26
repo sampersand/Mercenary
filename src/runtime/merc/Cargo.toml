@@ -1,0 +1,13 @@
+[package]
+name = "merc"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+runtime = { path = ".." }
+glue = { path = "../glue" }
+clap = "2.33.3"
+tracing-subscriber = "0.3.1"
+tracing = "0.1.23"
