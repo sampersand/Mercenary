@@ -1,0 +1,17 @@
+[package]
+name = "runtime"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[workspace]
+members = ["merc", "glue"]
+
+[dependencies]
+libc = "0.2.107"
+tracing = "0.1.23"
+rand = "0.8.4"
+
+[build-dependencies]
+cc = "1.0.72"

@@ -3,5 +3,6 @@
 src/parser/main
 src/lexer/main
 src/codegen/main
+src/runtime/target/
 
 .vscode
