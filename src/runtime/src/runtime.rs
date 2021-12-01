@@ -156,9 +156,21 @@ impl Runtime {
 
                     self.execute_function(func);
                 }
-                Instruction::CallUnknownFunction { .. } => {
+                Instruction::CallUnknownFunction { arg_count } => {
                     let function = match self.value_stack.pop().unwrap() {
-                        Value::Function(func) => func,
+                        Value::Function(func) => {
+                            if func.arity() != *arg_count {
+                                let based_func = self
+                                    .functions
+                                    .iter()
+                                    .find(|f| f.name() == func.name() && f.arity() == *arg_count)
+                                    .cloned()
+                                    .unwrap();
+                                based_func
+                            } else {
+                                func
+                            }
+                        }
                         var => panic!(
                             "\n{}\n\nfunction_stack: {:#?}\n\n\nglobals: {:#?}",
                             var.to_string(),
