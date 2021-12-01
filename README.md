@@ -10,7 +10,7 @@ The following lovely people contributed to the original project:
 - Lexer (Assembly): [ReNegate](https://github.com/RealNeGate)
 - AST Generation (C): [Paradoxical](https://github.com/ThePuzzlemaker/)
 - Codegen (C++): [RazzBerry](https://github.com/jhburns/)
-- Runtime (RUST): [easyaspi314](https://github.com/easyaspi314)
+- Runtime (RUST): [RealKC](https://github.com/RealKC)
 - REPL (TBD): TBD
 - Bytecode Optimizations (TBD): TBD
 - (Maybe?) Preprocessor
