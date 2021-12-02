@@ -135,7 +135,7 @@ function fn_lth(args) {
 	let lhs = run(args[0]);
 	let kind = kindof(lhs);
 
-	if (kind == 'number') {
+	if (kind == 'integer') {
 		return lhs < to_number(args[1]);
 	} else if (kind == 'string') {
 		return lhs < to_string(args[1]);
@@ -150,7 +150,7 @@ function fn_gth(args) {
 	let lhs = run(args[0]);
 	let kind = kindof(lhs);
 
-	if (kind == 'number') {
+	if (kind == 'integer') {
 		return lhs > to_number(args[1]);
 	} else if (kind == 'string') {
 		return lhs > to_string(args[1]);

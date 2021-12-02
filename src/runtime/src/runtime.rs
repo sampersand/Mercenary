@@ -2,6 +2,7 @@ use std::{
     cell::RefCell,
     collections::HashSet,
     error::Error,
+    mem,
     path::{Path, PathBuf},
     rc::Rc,
     slice::Iter,
@@ -23,6 +24,7 @@ pub struct Runtime {
     instruction_reader: InstructionReader,
     argv: Value,
     base_path: PathBuf,
+    pub(crate) return_value: Value,
 }
 
 type InstructionReader = Box<dyn Fn(&str, &Path) -> Result<Vec<Instruction>, Box<dyn Error>>>;
@@ -66,6 +68,7 @@ impl Runtime {
             instruction_reader,
             argv,
             base_path,
+            return_value: Value::Null,
         }
     }
 
@@ -86,13 +89,14 @@ impl Runtime {
             Function::Bytecode(bytecode) => {
                 let mut new_bytecode = bytecode.clone();
                 for _ in 0..bytecode.arity {
-                    new_bytecode.locals.push(self.pop_value_from_stack());
+                    let arg = self.pop_value_from_stack();
+                    new_bytecode.locals.insert(0, arg);
                 }
                 self.function_stack.push(Function::Bytecode(new_bytecode));
                 let old_value_stack_size = self.value_stack.len();
                 self.execute_insns(&bytecode.code.0);
-                let r#return = self.pop_value_from_stack();
-                while self.value_stack.len() >= old_value_stack_size {
+                let r#return = mem::replace(&mut self.return_value, Value::Null);
+                while self.value_stack.len() > old_value_stack_size {
                     if self.value_stack.is_empty() {
                         break;
                     }
@@ -100,7 +104,9 @@ impl Runtime {
                 }
                 self.push_value_to_stack(r#return);
             }
-            Function::Native(native) => (native.fun_ptr)(self),
+            Function::Native(native) => {
+                (native.fun_ptr)(self);
+            }
         }
     }
 
@@ -123,6 +129,7 @@ impl Runtime {
                 }
                 Instruction::EndBlock => {}
                 Instruction::Return => {
+                    self.return_value = self.value_stack.pop().unwrap_or(Value::Null);
                     self.function_stack.pop();
                     return BreakRequested::Return;
                 }
@@ -149,9 +156,21 @@ impl Runtime {
 
                     self.execute_function(func);
                 }
-                Instruction::CallUnknownFunction { .. } => {
+                Instruction::CallUnknownFunction { arg_count } => {
                     let function = match self.value_stack.pop().unwrap() {
-                        Value::Function(func) => func,
+                        Value::Function(func) => {
+                            if func.arity() != *arg_count {
+                                let based_func = self
+                                    .functions
+                                    .iter()
+                                    .find(|f| f.name() == func.name() && f.arity() == *arg_count)
+                                    .cloned()
+                                    .unwrap();
+                                based_func
+                            } else {
+                                func
+                            }
+                        }
                         var => panic!(
                             "\n{}\n\nfunction_stack: {:#?}\n\n\nglobals: {:#?}",
                             var.to_string(),
