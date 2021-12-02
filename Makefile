@@ -24,7 +24,7 @@ CXXFLAGS ?= -std=c++2a
 ifeq ($(ASAN),1)
 	LDFLAGS += -fsanitize=address
 	CFLAGS += -fsanitize=address
-	CXXFLAGS += -fsanitize=undefined
+	CXXFLAGS += -fsanitize=address
 endif
 
 ifeq ($(UBSAN),1)
