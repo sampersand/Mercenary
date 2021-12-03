@@ -1,19 +1,26 @@
 CC ?= cc
 CFLAGS ?= -O2
 # CFLAGS += -Isrc/parser -Isrc/lexer
-LDFLAGS += -no-pie
-
-ifeq ($(OS),Windows_NT)
-    # Use win64 for Windows only
-    NASM_FORMAT = win64
+ARCH := $(shell uname -m)
+ifeq ($(filter-out arm64 aarch64,$(ARCH)),)
+    # arm64
+    lexer_obj := src/lexer/lexer_arm64.o
 else
-    UNAME_S := $(shell uname -s)
-    ifeq ($(UNAME_S),Darwin)
-    	# Use macho64 for Darwin only
-	NASM_FORMAT = macho64
+    LDFLAGS += -no-pie
+    # assume x86_64
+    lexer_obj := src/lexer/lexer.o
+    ifeq ($(OS),Windows_NT)
+        # Use win64 for Windows only
+        NASM_FORMAT = win64
     else
-    	# Use elf64 for everything else
-    	NASM_FORMAT = elf64
+        UNAME_S := $(shell uname -s)
+        ifeq ($(UNAME_S),Darwin)
+            # Use macho64 for Darwin only
+            NASM_FORMAT = macho64
+        else
+            # Use elf64 for everything else
+            NASM_FORMAT = elf64
+        endif
     endif
 endif
 
@@ -43,18 +50,20 @@ parser_objs = src/parser/ast-free.o src/parser/ast-visit.o src/parser/ast.o src/
 
 all: src/parser/main src/lexer/main src/codegen/main
 
-src/parser/main: $(parser_objs) src/lexer/lexer.o
+src/parser/main: $(parser_objs) $(lexer_obj)
 
 $(parser_objs): %.o: %.c
 
 src/lexer/lexer.o: src/lexer/lexer.asm
 	nasm -f$(NASM_FORMAT) $(ASMFLAGS) src/lexer/lexer.asm
+src/lexer/lexer_arm64.o: src/lexer/lexer_arm64.s
+	$(AS) $(ASMFLAGS) $< -o $@
 
-src/lexer/main: src/lexer/main.o src/lexer/lexer.o
+src/lexer/main: src/lexer/main.o $(lexer_obj)
 
 codegen_objs = src/codegen/ast.o src/codegen/middle_end.o src/codegen/instructions.o
 
-src/codegen/main: src/codegen/main.o $(codegen_objs) src/lexer/lexer.o $(parser_objs)
+src/codegen/main: src/codegen/main.o $(codegen_objs) $(lexer_obj) $(parser_objs)
 
 clean:
 	rm -f src/**/*.o src/lexer/main src/parser/main src/codegen/main
