@@ -16,7 +16,13 @@ The following lovely people contributed to the original project:
 - (Maybe?) Preprocessor
 - <others?>
 
-## Setup
+## Build Setup
 
- - Install https://www.nasm.us/
- - Run `make` 
+- Install https://www.nasm.us/ , `gcc`, `gcc`, and [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
+- `$ cd /src/runtime`
+- `$ cargo run -p merc`
+
+## Installation
+
+- `$ cargo install merc --path="src/runtime/merc/"`
+- `$ merc <file1> <file2> -- args`
