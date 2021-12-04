@@ -18,7 +18,7 @@ The following lovely people contributed to the original project:
 
 ## Build Setup
 
-- Install https://www.nasm.us/ , `gcc`, `gcc`, and [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
+- Install https://www.nasm.us/ , `gcc`, `g++`, and [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
 - `$ cd /src/runtime`
 - `$ cargo run -p merc`
 
